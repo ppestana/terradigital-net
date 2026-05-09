@@ -1,0 +1,2917 @@
+<!DOCTYPE html>
+<!-- TerraDigital — www.terradigital.net — v2.0 — 2026-04-29 -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TerraDigital — Territorial Intelligence</title>
+<meta name="description" content="GIS consulting and development by Pedro Pestana. Spatial data engineering, WebGIS platforms, and open-source territorial intelligence.">
+<meta property="og:title" content="TerraDigital — Territorial Intelligence">
+<meta property="og:description" content="From referee bias to forest fire alerts — data-driven territorial intelligence.">
+<meta property="og:url" content="https://www.terradigital.net">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Mono:wght@400;500&family=Oswald:wght@400;500;600&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- GSAP for animations -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+<style>
+/* ─── RESET & VARIABLES ─── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --orange:      #E8823A;
+  --orange-dim:  rgba(232,130,58,0.15);
+  --black:       #0c0c0e;
+  --dark:        #111111;
+  --dark2:       #1a1a1f;
+  --ink:         #e8e4dc;
+  --muted:       #7a7672;
+  --border:      rgba(232,130,58,0.18);
+  --white:       #faf8f5;
+  --serif:       'Cormorant Garamond', Georgia, serif;
+  --mono:        'DM Mono', 'Courier New', monospace;
+  --sans:        'Outfit', system-ui, sans-serif;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--sans);
+  background: var(--dark);
+  color: var(--ink);
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ─── CUSTOM CURSOR ─── */
+#cursor {
+  position: fixed;
+  width: 10px; height: 10px;
+  background: var(--orange);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: transform 0.1s, width 0.3s, height 0.3s, opacity 0.3s;
+  mix-blend-mode: normal;
+}
+#cursor-ring {
+  position: fixed;
+  width: 36px; height: 36px;
+  border: 1.5px solid rgba(232,130,58,0.5);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9998;
+  transform: translate(-50%,-50%);
+  transition: width 0.4s, height 0.4s, border-color 0.3s;
+}
+body:has(a:hover) #cursor,
+body:has(button:hover) #cursor { width: 16px; height: 16px; }
+body:has(a:hover) #cursor-ring,
+body:has(button:hover) #cursor-ring { width: 52px; height: 52px; border-color: var(--orange); }
+body:has(.slide:hover) #cursor-ring { width: 64px; height: 64px; }
+
+/* ─── NAVBAR ─── */
+#navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.4rem 2.5rem;
+  background: linear-gradient(to bottom, rgba(12,12,14,0.7) 0%, transparent 100%);
+  transition: background 0.4s, backdrop-filter 0.4s, padding 0.3s;
+}
+#navbar.scrolled {
+  background: rgba(12,12,14,0.96);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2.5rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  text-decoration: none;
+  cursor: none;
+}
+.logo-img {
+  height: 48px;
+  width: auto;
+  display: block;
+  filter: drop-shadow(0 0 8px rgba(232,130,58,0.15));
+  transition: filter 0.3s;
+}
+.logo:hover .logo-img {
+  filter: drop-shadow(0 0 12px rgba(232,130,58,0.35));
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+}
+.nav-link {
+  font-size: 0.82rem;
+  font-weight: 400;
+  color: rgba(232,228,220,0.55);
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  transition: color 0.2s;
+  cursor: none;
+}
+.nav-link:hover { color: var(--orange); }
+.nav-cta {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--orange);
+  border: 1px solid var(--border);
+  padding: 0.45rem 1.2rem;
+  border-radius: 2px;
+  text-decoration: none;
+  letter-spacing: 0.05em;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  cursor: none;
+}
+.nav-cta:hover { background: var(--orange); color: var(--dark); border-color: var(--orange); }
+
+/* ─── CAROUSEL ─── */
+#carousel {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  min-height: 600px;
+  overflow: hidden;
+  background: var(--black);
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  opacity: 0;
+  visibility: hidden;
+  cursor: none;
+}
+.slide.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Photo background */
+.slide-photo {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.06);
+  transition: transform 8s ease-out;
+}
+.slide.active .slide-photo {
+  transform: scale(1.0);
+}
+
+/* Gradient overlay */
+.slide-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to top,    rgba(10,10,12,0.88) 0%,  rgba(10,10,12,0.3) 45%, transparent 70%),
+    linear-gradient(to right,  rgba(10,10,12,0.5)  0%,  transparent 55%);
+}
+
+/* Content */
+.slide-content {
+  position: relative;
+  z-index: 2;
+  padding: 0 5rem 4rem;
+  max-width: 700px;
+}
+.slide-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--orange);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 0.7rem;
+  opacity: 0;
+}
+.slide-title {
+  font-family: var(--serif);
+  font-size: clamp(3rem, 6vw, 5.5rem);
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.1;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+  padding-bottom: 0.1em;
+  opacity: 0;
+  clip-path: inset(0 0 100% 0);
+}
+.slide-tagline {
+  font-family: var(--serif);
+  font-size: clamp(1rem, 1.8vw, 1.35rem);
+  font-style: italic;
+  color: rgba(232,228,220,0.75);
+  margin-bottom: 2rem;
+  line-height: 1.4;
+  opacity: 0;
+}
+.slide-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--sans);
+  font-size: 0.78rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dark);
+  background: var(--orange);
+  padding: 0.7rem 1.6rem;
+  border-radius: 2px;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.15s, transform 0.15s;
+  cursor: none;
+}
+.slide-btn:hover { opacity: 0.85 !important; transform: translateX(4px); }
+
+/* ─── CAROUSEL CONTROLS ─── */
+.carousel-nav {
+  position: absolute;
+  bottom: 3.5rem;
+  right: 4rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1.4rem;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.dot {
+  width: 20px; height: 2px;
+  background: rgba(232,228,220,0.2);
+  border-radius: 1px;
+  cursor: none;
+  border: none;
+  transition: background 0.3s, width 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+.dot.active { background: var(--orange); width: 40px; }
+
+.arrow-btns { display: flex; gap: 0.5rem; }
+.arrow-btn {
+  width: 42px; height: 42px;
+  border: 1px solid rgba(232,228,220,0.18);
+  border-radius: 2px;
+  background: rgba(12,12,14,0.35);
+  backdrop-filter: blur(8px);
+  color: var(--ink);
+  cursor: none;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, background 0.2s, color 0.2s;
+}
+.arrow-btn:hover { border-color: var(--orange); color: var(--orange); background: rgba(232,130,58,0.08); }
+
+/* Progress line */
+.progress-track {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 2px;
+  background: rgba(232,130,58,0.12);
+  z-index: 10;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--orange);
+  width: 0%;
+  transition: width linear;
+}
+
+/* Slide counter */
+.slide-counter {
+  position: absolute;
+  top: 50%;
+  right: 4rem;
+  transform: translateY(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: rgba(232,228,220,0.3);
+  letter-spacing: 0.08em;
+  writing-mode: vertical-rl;
+}
+.slide-counter .n-current { color: var(--orange); font-size: 0.9rem; }
+
+/* Scroll hint */
+.scroll-hint {
+  position: absolute;
+  bottom: 2.2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: none;
+  opacity: 0.45;
+  transition: opacity 0.3s;
+}
+.scroll-hint:hover { opacity: 0.9; }
+.scroll-hint span {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--ink);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+.scroll-line {
+  width: 1px; height: 32px;
+  background: linear-gradient(to bottom, var(--orange), transparent);
+  animation: scroll-drop 1.8s ease infinite;
+}
+@keyframes scroll-drop {
+  0%   { transform: scaleY(0); transform-origin: top; opacity: 1; }
+  50%  { transform: scaleY(1); transform-origin: top; opacity: 1; }
+  100% { transform: scaleY(1); transform-origin: bottom; opacity: 0; }
+}
+
+/* ─── PROJECTS SECTION ─── */
+#projects {
+  background: var(--dark2);
+  padding: 7rem 0 6rem;
+  border-top: 1px solid var(--border);
+}
+.section-header {
+  text-align: center;
+  margin-bottom: 4.5rem;
+  padding: 0 2rem;
+}
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--orange);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 0.9rem;
+}
+.section-title {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 600;
+  color: var(--white);
+  line-height: 1.1;
+}
+.section-sub {
+  margin-top: 1rem;
+  font-size: 0.92rem;
+  color: var(--muted);
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.75;
+}
+
+.projects-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: var(--border);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.project-cell {
+  background: var(--dark2);
+  padding: 2.5rem;
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: background 0.3s;
+  cursor: none;
+}
+.project-cell::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--orange);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+}
+.project-cell:hover { background: rgba(232,130,58,0.03); }
+.project-cell:hover::after { transform: scaleX(1); }
+.cell-num {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  margin-bottom: 1.4rem;
+}
+.cell-icon { width: 44px; height: 44px; margin-bottom: 1.2rem; opacity: 0.75; }
+.cell-tag {
+  font-family: var(--sans);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 0.35rem;
+}
+.cell-title {
+  font-family: var(--serif);
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: var(--white);
+  margin-bottom: 0.7rem;
+  line-height: 1.2;
+}
+.cell-desc {
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.7;
+}
+.cell-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 1.5rem;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+}
+.sdot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.sdot.live {
+  background: #4caf76;
+  box-shadow: 0 0 6px rgba(76,175,118,0.45);
+  animation: pulse 2s ease infinite;
+}
+.sdot.dev { background: var(--orange); }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.35} }
+
+/* ─── ABOUT ─── */
+#about {
+  background: var(--black);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.about-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 6rem 2.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6rem;
+}
+.about-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--orange);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin-bottom: 1.2rem;
+}
+.about-heading {
+  font-family: var(--serif);
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  font-weight: 600;
+  color: var(--white);
+  line-height: 1.15;
+  margin-bottom: 1.5rem;
+}
+.about-heading em { color: var(--orange); font-style: italic; }
+.about-body {
+  font-size: 0.9rem;
+  color: var(--muted);
+  line-height: 1.85;
+  margin-bottom: 0.9rem;
+}
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-content: start;
+  padding-top: 0.5rem;
+}
+.stat {
+  border: 1px solid var(--border);
+  padding: 1.6rem;
+  border-radius: 2px;
+}
+.stat-n {
+  font-family: var(--serif);
+  font-size: 2.6rem;
+  font-weight: 700;
+  color: var(--orange);
+  line-height: 1;
+  margin-bottom: 0.45rem;
+}
+.stat-l {
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ─── CONTACT ─── */
+#contact {
+  background: var(--dark2);
+  padding: 7rem 2.5rem;
+  border-top: 1px solid var(--border);
+}
+.contact-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 6rem;
+}
+.contact-heading {
+  font-family: var(--serif);
+  font-size: clamp(2rem, 3.5vw, 3.2rem);
+  font-weight: 600;
+  color: var(--white);
+  line-height: 1.1;
+  margin-bottom: 1.2rem;
+}
+.contact-heading em { color: var(--orange); font-style: italic; }
+.contact-body { font-size: 0.88rem; color: var(--muted); line-height: 1.8; margin-bottom: 2rem; }
+.contact-detail { display: flex; flex-direction: column; gap: 0.85rem; }
+.contact-row {
+  display: flex; align-items: center; gap: 0.75rem;
+  font-family: var(--mono); font-size: 0.74rem;
+  color: rgba(232,228,220,0.45);
+}
+.contact-row svg { color: var(--orange); flex-shrink: 0; }
+.contact-row a { color: inherit; text-decoration: none; transition: color 0.2s; cursor: none; }
+.contact-row a:hover { color: var(--orange); }
+
+/* Form */
+.contact-form { display: flex; flex-direction: column; gap: 1.1rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; }
+.field { display: flex; flex-direction: column; gap: 0.4rem; }
+.field label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.field input,
+.field select,
+.field textarea {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(232,228,220,0.1);
+  border-radius: 2px;
+  padding: 0.75rem 1rem;
+  font-family: var(--sans);
+  font-size: 0.88rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  -webkit-appearance: none;
+}
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237a7672' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+  cursor: none;
+}
+.field select option { background: var(--dark2); }
+.field input:focus, .field select:focus, .field textarea:focus {
+  border-color: var(--orange);
+  background: rgba(232,130,58,0.03);
+}
+.field input::placeholder, .field textarea::placeholder { color: rgba(122,118,114,0.5); }
+.field textarea { resize: vertical; min-height: 130px; }
+.form-submit {
+  display: inline-flex; align-items: center; gap: 0.6rem;
+  background: var(--orange); color: var(--dark);
+  border: none; padding: 0.85rem 2rem;
+  font-family: var(--sans); font-size: 0.84rem;
+  font-weight: 600; letter-spacing: 0.06em;
+  border-radius: 2px; cursor: none;
+  transition: opacity 0.2s, transform 0.2s;
+  align-self: flex-start;
+}
+.form-submit:hover { opacity: 0.85; transform: translateY(-1px); }
+.form-success {
+  display: none; padding: 1.1rem;
+  border: 1px solid rgba(76,175,118,0.25);
+  background: rgba(76,175,118,0.05);
+  border-radius: 2px; font-size: 0.84rem;
+  color: #4caf76; line-height: 1.6;
+}
+
+/* ─── FOOTER ─── */
+footer {
+  background: var(--black);
+  border-top: 1px solid var(--border);
+  padding: 3.5rem 2.5rem 2.5rem;
+}
+.footer-inner {
+  max-width: 1200px; margin: 0 auto;
+  display: grid; grid-template-columns: 1.6fr 1fr 1fr;
+  gap: 3.5rem;
+  padding-bottom: 2.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.footer-made {
+  font-family: var(--serif); font-style: italic;
+  font-size: 1.5rem; color: var(--orange); margin-bottom: 0.6rem;
+}
+.footer-desc { font-size: 0.82rem; color: var(--muted); line-height: 1.75; max-width: 290px; }
+.footer-col-title {
+  font-family: var(--mono); font-size: 0.62rem;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 1rem;
+}
+.footer-links { list-style: none; display: flex; flex-direction: column; gap: 0.55rem; }
+.footer-links a {
+  font-size: 0.83rem; color: rgba(232,228,220,0.45);
+  text-decoration: none; transition: color 0.2s; cursor: none;
+}
+.footer-links a:hover { color: var(--orange); }
+.social-row { display: flex; gap: 0.7rem; margin-top: 1.2rem; }
+.social-btn {
+  width: 36px; height: 36px;
+  border: 1px solid var(--border); border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--muted); text-decoration: none; cursor: none;
+  transition: border-color 0.2s, color 0.2s;
+}
+.social-btn:hover { border-color: var(--orange); color: var(--orange); }
+.footer-bottom {
+  max-width: 1200px; margin: 0 auto; padding-top: 1.8rem;
+  display: flex; justify-content: space-between; align-items: center;
+  font-family: var(--mono); font-size: 0.65rem; color: var(--muted);
+}
+.footer-bottom a { color: inherit; text-decoration: none; cursor: none; }
+.footer-bottom a:hover { color: var(--orange); }
+
+/* ─── RESPONSIVE ─── */
+@media (max-width: 1024px) {
+  .projects-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+  .about-inner { grid-template-columns: 1fr; gap: 3rem; padding: 4rem 2rem; }
+  .contact-inner { grid-template-columns: 1fr; gap: 3rem; }
+  .footer-inner { grid-template-columns: 1fr 1fr; }
+  .slide-content { padding: 0 2.5rem 3.5rem; }
+  .carousel-nav { right: 2rem; }
+  .slide-counter { display: none; }
+  #cursor, #cursor-ring { display: none; }
+  body { cursor: auto; }
+  a, button { cursor: pointer; }
+}
+@media (max-width: 600px) {
+  #navbar { padding: 1.2rem 1.5rem; }
+  .nav-right .nav-link { display: none; }
+  .projects-grid { grid-template-columns: 1fr; }
+  .footer-inner { grid-template-columns: 1fr; }
+  .form-row { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ─── COMING SOON MODAL ─── */
+#cs-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+#cs-modal.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* backdrop */
+.cs-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10,10,12,0.88);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  cursor: none;
+}
+
+/* panel */
+.cs-panel {
+  position: relative;
+  z-index: 1;
+  width: min(760px, 92vw);
+  max-height: 90vh;
+  overflow: hidden;
+  border-radius: 3px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  transform: translateY(28px) scale(0.97);
+  transition: transform 0.45s cubic-bezier(0.16,1,0.3,1);
+  box-shadow: 0 40px 80px rgba(0,0,0,0.6);
+}
+#cs-modal.open .cs-panel {
+  transform: translateY(0) scale(1);
+}
+
+/* hero photo */
+.cs-photo {
+  position: relative;
+  height: 280px;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: var(--black);
+}
+.cs-photo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.04);
+  transition: transform 6s ease-out;
+}
+#cs-modal.open .cs-photo-img {
+  transform: scale(1.0);
+}
+.cs-photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 30%,
+    rgba(10,10,12,0.75) 100%
+  );
+}
+
+/* badge */
+.cs-badge {
+  position: absolute;
+  top: 1.2rem;
+  left: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(10,10,12,0.75);
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+  padding: 0.4rem 0.85rem;
+  border-radius: 2px;
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+.cs-badge-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--orange);
+  animation: pulse 2s ease infinite;
+}
+
+/* close button */
+.cs-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 36px; height: 36px;
+  border: 1px solid rgba(232,228,220,0.2);
+  border-radius: 2px;
+  background: rgba(10,10,12,0.6);
+  backdrop-filter: blur(8px);
+  color: var(--ink);
+  cursor: none;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, color 0.2s;
+  z-index: 2;
+}
+.cs-close:hover { border-color: var(--orange); color: var(--orange); }
+
+/* project name on photo */
+.cs-photo-label {
+  position: absolute;
+  bottom: 1.2rem;
+  left: 1.5rem;
+  z-index: 2;
+}
+.cs-photo-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: var(--orange);
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+.cs-photo-title {
+  font-family: var(--serif);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1;
+}
+
+/* body area */
+.cs-body {
+  background: var(--dark2);
+  padding: 2rem 2.2rem 2.2rem;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.cs-tagline {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.1rem;
+  color: rgba(232,228,220,0.7);
+  margin-bottom: 1.4rem;
+  line-height: 1.5;
+  padding-bottom: 1.2rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.cs-message {
+  font-size: 0.86rem;
+  color: var(--muted);
+  line-height: 1.8;
+  margin-bottom: 1.6rem;
+}
+
+/* newsletter form */
+.cs-nl-label {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--orange);
+  margin-bottom: 0.7rem;
+}
+.cs-nl-row {
+  display: flex;
+  gap: 0.6rem;
+}
+.cs-nl-input {
+  flex: 1;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(232,228,220,0.12);
+  border-radius: 2px;
+  padding: 0.7rem 1rem;
+  font-family: var(--sans);
+  font-size: 0.86rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s;
+  cursor: none;
+}
+.cs-nl-input:focus { border-color: var(--orange); }
+.cs-nl-input::placeholder { color: rgba(122,118,114,0.5); }
+.cs-nl-btn {
+  background: var(--orange);
+  color: var(--dark);
+  border: none;
+  padding: 0.7rem 1.4rem;
+  border-radius: 2px;
+  font-family: var(--sans);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  cursor: none;
+  transition: opacity 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.cs-nl-btn:hover { opacity: 0.85; }
+.cs-nl-ok {
+  display: none;
+  margin-top: 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: #4caf76;
+  letter-spacing: 0.1em;
+}
+.cs-nl-err {
+  display: none;
+  margin-top: 0.6rem;
+  font-size: 0.78rem;
+  color: rgba(232,228,220,0.4);
+}
+
+@media (max-width: 600px) {
+  .cs-photo { height: 200px; }
+  .cs-photo-title { font-size: 1.5rem; }
+  .cs-body { padding: 1.5rem; }
+  .cs-nl-row { flex-direction: column; }
+  .cs-nl-btn { width: 100%; }
+}
+
+
+/* ─── CAL SPLASH MODAL ─── */
+#cal-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+  background: rgba(10,10,12,0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+#cal-splash.open {
+  opacity: 1;
+  visibility: visible;
+}
+.cal-panel {
+  position: relative;
+  width: min(820px, 94vw);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #0d0f10;
+  border: 1px solid #2a2e34;
+  border-radius: 4px;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.7);
+  transform: translateY(24px) scale(0.97);
+  transition: transform 0.45s cubic-bezier(0.16,1,0.3,1);
+  font-family: 'IBM Plex Sans', 'Outfit', sans-serif;
+}
+#cal-splash.open .cal-panel {
+  transform: translateY(0) scale(1);
+}
+.cal-header {
+  background: #141618;
+  border-bottom: 2px solid #f5a623;
+  padding: 1.1rem 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.cal-sigla {
+  font-family: 'Oswald', 'Outfit', sans-serif;
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: 4px;
+  color: #f5a623;
+  line-height: 1;
+}
+.cal-subname {
+  font-size: 0.78rem;
+  color: #8a929e;
+  font-weight: 300;
+  margin-left: 1rem;
+  letter-spacing: 0.04em;
+}
+.cal-version {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(245,166,35,0.1);
+  border: 1px solid rgba(245,166,35,0.3);
+  border-radius: 3px;
+  padding: 0.2rem 0.6rem;
+  font-size: 0.65rem;
+  color: #f5a623;
+  letter-spacing: 0.1em;
+  font-family: 'DM Mono', monospace;
+}
+.cal-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 1rem;
+  width: 32px; height: 32px;
+  border: 1px solid rgba(232,228,220,0.15);
+  border-radius: 2px;
+  background: rgba(12,12,14,0.5);
+  color: #8a929e;
+  cursor: none;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, color 0.2s;
+  z-index: 2;
+}
+.cal-close:hover { border-color: #f5a623; color: #f5a623; }
+.cal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1.8rem 1rem;
+}
+.cal-body::-webkit-scrollbar { width: 4px; }
+.cal-body::-webkit-scrollbar-track { background: #141618; }
+.cal-body::-webkit-scrollbar-thumb { background: #2a2e34; border-radius: 2px; }
+.cal-block {
+  margin-bottom: 1.4rem;
+  border: 1px solid #2a2e34;
+  border-radius: 3px;
+  overflow: hidden;
+}
+.cal-block-head {
+  background: #141618;
+  border-bottom: 1px solid #2a2e34;
+  padding: 0.55rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.cal-block-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  color: #f5a623;
+  letter-spacing: 0.15em;
+  background: rgba(245,166,35,0.1);
+  border-radius: 2px;
+  padding: 0.1rem 0.4rem;
+}
+.cal-block-title {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: #fff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.cal-block-body {
+  padding: 1rem 1.2rem;
+  background: #1c1f22;
+}
+.cal-block-body p {
+  font-size: 0.82rem;
+  color: #8a929e;
+  font-weight: 300;
+  line-height: 1.75;
+  margin-bottom: 0.5rem;
+}
+.cal-block-body p:last-child { margin-bottom: 0; }
+.cal-block-body strong { color: #d4d8de; font-weight: 500; }
+.cal-tech-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.cal-pill {
+  display: inline-flex;
+  align-items: center;
+  background: #141618;
+  border: 1px solid #373d46;
+  border-radius: 3px;
+  padding: 0.25rem 0.6rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: #8a929e;
+  letter-spacing: 0.04em;
+}
+.cal-pill.am { border-color: rgba(245,166,35,0.35); color: #f5a623; }
+.cal-pill.bl { border-color: rgba(74,158,255,0.35); color: #4a9eff; }
+.cal-pill.gr { border-color: rgba(61,184,122,0.35); color: #3db87a; }
+.cal-pill.te { border-color: rgba(46,196,182,0.35); color: #2ec4b6; }
+.cal-ai-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+.cal-ai-table th {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #4e5663;
+  border-bottom: 1px solid #2a2e34;
+  padding: 0.45rem 0.7rem;
+  text-align: left;
+  background: #141618;
+}
+.cal-ai-table td {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid #2a2e34;
+  color: #8a929e;
+  font-weight: 300;
+  vertical-align: top;
+  font-size: 0.78rem;
+}
+.cal-ai-table tr:last-child td { border-bottom: none; }
+.cal-ai-table td:first-child { color: #d4d8de; font-weight: 400; white-space: nowrap; }
+.cal-dev-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.cal-dev-avatar {
+  width: 42px; height: 42px;
+  border-radius: 50%;
+  background: #141618;
+  border: 2px solid #f5a623;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #f5a623;
+  flex-shrink: 0;
+}
+.cal-dev-name {
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: #fff;
+  letter-spacing: 0.03em;
+}
+.cal-dev-links {
+  display: flex;
+  gap: 0.8rem;
+  margin-top: 0.25rem;
+}
+.cal-dev-link {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: #4e5663;
+  text-decoration: none;
+  transition: color 0.2s;
+  cursor: none;
+}
+.cal-dev-link:hover { color: #f5a623; }
+.cal-github-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #141618;
+  border: 1px solid #373d46;
+  border-radius: 3px;
+  padding: 0.55rem 1rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.72rem;
+  color: #d4d8de;
+  text-decoration: none;
+  transition: border-color 0.2s, color 0.2s;
+  cursor: none;
+}
+.cal-github-btn:hover { border-color: #f5a623; color: #f5a623; }
+.cal-footer {
+  background: #141618;
+  border-top: 1px solid #2a2e34;
+  padding: 0.9rem 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.cal-skip-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.cal-skip-row input[type="checkbox"] {
+  width: 14px; height: 14px;
+  accent-color: #f5a623;
+  cursor: pointer;
+}
+.cal-skip-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 0.65rem;
+  color: #8a929e;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  user-select: none;
+}
+.cal-action-group {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+.cal-countdown-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.68rem;
+  color: #4e5663;
+  letter-spacing: 0.08em;
+}
+.cal-countdown-num {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #f5a623;
+  min-width: 1.2rem;
+  text-align: center;
+}
+.cal-ring { width: 32px; height: 32px; flex-shrink: 0; }
+.cal-ring circle { fill: none; stroke-width: 2.5; stroke-linecap: round;
+  transform-origin: center; transform: rotate(-90deg); }
+.cal-ring .r-bg   { stroke: #373d46; }
+.cal-ring .r-fill { stroke: #f5a623; transition: stroke-dashoffset 1s linear; }
+.cal-enter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: #f5a623;
+  color: #000;
+  border: none;
+  border-radius: 3px;
+  padding: 0.55rem 1.2rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: none;
+  transition: opacity 0.2s;
+}
+.cal-enter-btn:hover:not(:disabled) { opacity: 0.85; }
+.cal-enter-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+@media (max-width: 600px) {
+  .cal-footer { flex-direction: column; align-items: flex-start; }
+  .cal-dev-row { flex-direction: column; align-items: flex-start; }
+  .cal-subname { display: none; }
+}
+
+
+/* ─── SOCIAL SPLASH MODAL ─── */
+#social-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 6000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+  background: rgba(10,10,12,0.92);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+#social-splash.open { opacity: 1; visibility: visible; }
+.social-panel {
+  position: relative;
+  width: min(820px, 94vw);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #0d1117;
+  border: 1px solid rgba(44,95,138,0.3);
+  border-radius: 4px;
+  box-shadow: 0 40px 80px rgba(0,0,0,0.7);
+  transform: translateY(24px) scale(0.97);
+  transition: transform 0.45s cubic-bezier(0.16,1,0.3,1);
+  font-family: 'Outfit', sans-serif;
+}
+#social-splash.open .social-panel { transform: translateY(0) scale(1); }
+.social-header {
+  background: #111827;
+  border-bottom: 2px solid #2C5F8A;
+  padding: 1rem 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.social-sigla {
+  font-family: 'Crimson Pro', 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #7ab3d4;
+  letter-spacing: 0.02em;
+}
+.social-subname { font-size: 0.75rem; color: #6b7280; margin-left: 0.8rem; font-weight: 300; }
+.social-version {
+  font-family: var(--mono);
+  font-size: 0.62rem;
+  color: #2C5F8A;
+  background: rgba(44,95,138,0.1);
+  border: 1px solid rgba(44,95,138,0.3);
+  border-radius: 3px;
+  padding: 0.2rem 0.5rem;
+  letter-spacing: 0.1em;
+}
+.social-close {
+  width: 30px; height: 30px;
+  border: 1px solid rgba(250,249,247,0.12);
+  border-radius: 2px;
+  background: rgba(12,12,14,0.5);
+  color: #6b7280;
+  cursor: none;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.2s, color 0.2s;
+  margin-left: 0.8rem;
+}
+.social-close:hover { border-color: #2C5F8A; color: #7ab3d4; }
+.social-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.4rem 1.6rem 1rem;
+}
+.social-body::-webkit-scrollbar { width: 4px; }
+.social-body::-webkit-scrollbar-thumb { background: rgba(44,95,138,0.3); border-radius: 2px; }
+.social-block {
+  margin-bottom: 1.2rem;
+  border: 1px solid rgba(44,95,138,0.2);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.social-block-head {
+  background: #111827;
+  border-bottom: 1px solid rgba(44,95,138,0.15);
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.social-block-num {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: #2C5F8A;
+  background: rgba(44,95,138,0.12);
+  border-radius: 2px;
+  padding: 0.1rem 0.35rem;
+  letter-spacing: 0.12em;
+}
+.social-block-title {
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #f9f8f7;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.social-block-body {
+  padding: 1rem 1.2rem;
+  background: #0d1117;
+}
+.social-block-body p {
+  font-size: 0.8rem;
+  color: #8a929e;
+  font-weight: 300;
+  line-height: 1.75;
+  margin-bottom: 0.5rem;
+}
+.social-block-body p:last-child { margin-bottom: 0; }
+.social-block-body strong { color: #d4d8de; font-weight: 500; }
+.social-pill-row { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+.social-pill {
+  font-family: var(--mono);
+  font-size: 0.63rem;
+  background: rgba(44,95,138,0.12);
+  border: 1px solid rgba(44,95,138,0.28);
+  color: #7ab3d4;
+  border-radius: 2px;
+  padding: 0.2rem 0.5rem;
+}
+.social-pill.warm { background: rgba(138,92,44,0.12); border-color: rgba(138,92,44,0.28); color: #c4956b; }
+.social-pill.green { background: rgba(61,184,122,0.1); border-color: rgba(61,184,122,0.28); color: #3db87a; }
+.social-ai-table { width:100%; border-collapse:collapse; font-size:0.75rem; margin-top:0.5rem; }
+.social-ai-table th { font-family:var(--mono); font-size:0.58rem; letter-spacing:0.1em; text-transform:uppercase; color:#4e5663; border-bottom:1px solid rgba(44,95,138,0.2); padding:0.4rem 0.6rem; text-align:left; background:#111827; }
+.social-ai-table td { padding:0.45rem 0.6rem; border-bottom:1px solid rgba(44,95,138,0.1); color:#8a929e; font-weight:300; vertical-align:top; font-size:0.75rem; }
+.social-ai-table tr:last-child td { border-bottom:none; }
+.social-ai-table td:first-child { color:#d4d8de; font-weight:400; white-space:nowrap; }
+.social-dev-row { display:flex; align-items:center; gap:1rem; margin-bottom:0.7rem; }
+.social-dev-avatar { width:38px;height:38px;border-radius:50%;background:rgba(44,95,138,0.15);border:2px solid #2C5F8A;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:600;color:#7ab3d4;flex-shrink:0; }
+.social-dev-name { font-size:0.88rem;font-weight:500;color:#f9f8f7; }
+.social-dev-links { display:flex;gap:0.7rem;margin-top:0.2rem; }
+.social-dev-link { font-family:var(--mono);font-size:0.62rem;color:#4e5663;text-decoration:none;transition:color 0.2s;cursor:none; }
+.social-dev-link:hover { color:#2C5F8A; }
+.social-gh-btn { display:inline-flex;align-items:center;gap:0.5rem;background:rgba(44,95,138,0.1);border:1px solid rgba(44,95,138,0.3);border-radius:3px;padding:0.5rem 0.9rem;font-family:var(--mono);font-size:0.68rem;color:#7ab3d4;text-decoration:none;transition:border-color 0.2s;cursor:none;margin-top:0.5rem; }
+.social-gh-btn:hover { border-color:#2C5F8A; }
+.social-footer {
+  background: #111827;
+  border-top: 1px solid rgba(44,95,138,0.2);
+  padding: 0.85rem 1.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+.social-skip-row { display:flex;align-items:center;gap:0.5rem;cursor:pointer; }
+.social-skip-row input { width:13px;height:13px;accent-color:#2C5F8A;cursor:pointer; }
+.social-skip-label { font-family:var(--mono);font-size:0.63rem;color:#4e5663;letter-spacing:0.06em;user-select:none;cursor:pointer; }
+.social-action-group { display:flex;align-items:center;gap:0.8rem; }
+.social-countdown-wrap { display:flex;align-items:center;gap:0.4rem;font-family:var(--mono);font-size:0.65rem;color:#4e5663;letter-spacing:0.08em; }
+.social-countdown-num { font-size:1rem;font-weight:500;color:#2C5F8A;min-width:1.2rem;text-align:center;transition:color 0.3s; }
+.social-ring { width:30px;height:30px;flex-shrink:0; }
+.social-ring circle { fill:none;stroke-width:2.5;stroke-linecap:round;transform-origin:center;transform:rotate(-90deg); }
+.social-ring .sr-bg { stroke:rgba(44,95,138,0.25); }
+.social-ring .sr-fill { stroke:#2C5F8A;transition:stroke-dashoffset 1s linear; }
+.social-enter-btn { display:inline-flex;align-items:center;gap:0.45rem;background:#2C5F8A;color:#fff;border:none;border-radius:3px;padding:0.55rem 1.2rem;font-size:0.8rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:none;transition:opacity 0.2s; }
+.social-enter-btn:hover:not(:disabled) { opacity:0.85; }
+.social-enter-btn:disabled { opacity:0.3;cursor:not-allowed; }
+
+
+/* ─── ECONOSTATS SPLASH MODAL ─── */
+#econostats-splash {
+  position: fixed; inset: 0; z-index: 6000;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; visibility: hidden;
+  transition: opacity 0.4s ease, visibility 0.4s ease;
+  background: rgba(10,10,12,0.92);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+}
+#econostats-splash.open { opacity: 1; visibility: visible; }
+.eco-panel {
+  position: relative; width: min(820px,94vw); max-height: 90vh;
+  overflow: hidden; display: flex; flex-direction: column;
+  background: #0a0e0c; border: 1px solid rgba(15,110,79,0.3);
+  border-radius: 4px; box-shadow: 0 40px 80px rgba(0,0,0,0.7);
+  transform: translateY(24px) scale(0.97);
+  transition: transform 0.45s cubic-bezier(0.16,1,0.3,1);
+  font-family: 'Outfit', sans-serif;
+}
+#econostats-splash.open .eco-panel { transform: translateY(0) scale(1); }
+.eco-header {
+  background: #0f1a14; border-bottom: 2px solid #0f6e4f;
+  padding: 1rem 1.6rem; display: flex; align-items: center;
+  justify-content: space-between; flex-shrink: 0;
+}
+.eco-sigla { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.6rem; font-weight: 600; color: #4ade80; }
+.eco-subname { font-size: 0.75rem; color: #6b7280; margin-left: 0.8rem; font-weight: 300; }
+.eco-version { font-family: var(--mono); font-size: 0.62rem; color: #0f6e4f; background: rgba(15,110,79,0.1); border: 1px solid rgba(15,110,79,0.3); border-radius: 3px; padding: 0.2rem 0.5rem; letter-spacing: 0.1em; }
+.eco-close { width:30px;height:30px;border:1px solid rgba(250,249,247,0.12);border-radius:2px;background:rgba(12,12,14,0.5);color:#6b7280;cursor:none;display:flex;align-items:center;justify-content:center;transition:border-color 0.2s,color 0.2s;margin-left:0.8rem; }
+.eco-close:hover { border-color:#0f6e4f;color:#4ade80; }
+.eco-body { flex:1;overflow-y:auto;padding:1.4rem 1.6rem 1rem; }
+.eco-body::-webkit-scrollbar{width:4px}.eco-body::-webkit-scrollbar-thumb{background:rgba(15,110,79,0.3);border-radius:2px}
+.eco-block { margin-bottom:1.2rem;border:1px solid rgba(15,110,79,0.2);border-radius:3px;overflow:hidden; }
+.eco-block-head { background:#0f1a14;border-bottom:1px solid rgba(15,110,79,0.15);padding:0.5rem 1rem;display:flex;align-items:center;gap:0.6rem; }
+.eco-block-num { font-family:var(--mono);font-size:0.58rem;color:#0f6e4f;background:rgba(15,110,79,0.12);border-radius:2px;padding:0.1rem 0.35rem;letter-spacing:0.12em; }
+.eco-block-title { font-size:0.78rem;font-weight:500;color:#f9f8f7;text-transform:uppercase;letter-spacing:0.06em; }
+.eco-block-body { padding:1rem 1.2rem;background:#0a0e0c; }
+.eco-block-body p { font-size:0.8rem;color:#8a929e;font-weight:300;line-height:1.75;margin-bottom:0.5rem; }
+.eco-block-body p:last-child{margin-bottom:0}
+.eco-block-body strong{color:#d4d8de;font-weight:500}
+.eco-pill-row{display:flex;flex-wrap:wrap;gap:0.4rem;margin-top:0.4rem}
+.eco-pill{font-family:var(--mono);font-size:0.63rem;background:rgba(15,110,79,0.1);border:1px solid rgba(15,110,79,0.28);color:#4ade80;border-radius:2px;padding:0.2rem 0.5rem;}
+.eco-pill.b{background:rgba(26,79,160,0.1);border-color:rgba(26,79,160,0.28);color:#60a5fa;}
+.eco-pill.w{background:rgba(184,74,30,0.1);border-color:rgba(184,74,30,0.28);color:#fb923c;}
+.eco-ai-table{width:100%;border-collapse:collapse;font-size:0.75rem;margin-top:0.5rem}
+.eco-ai-table th{font-family:var(--mono);font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:#4e5663;border-bottom:1px solid rgba(15,110,79,0.2);padding:0.4rem 0.6rem;text-align:left;background:#0f1a14}
+.eco-ai-table td{padding:0.45rem 0.6rem;border-bottom:1px solid rgba(15,110,79,0.1);color:#8a929e;font-weight:300;vertical-align:top;font-size:0.75rem}
+.eco-ai-table tr:last-child td{border-bottom:none}
+.eco-ai-table td:first-child{color:#d4d8de;font-weight:400;white-space:nowrap}
+.eco-dev-row{display:flex;align-items:center;gap:1rem;margin-bottom:0.7rem}
+.eco-dev-avatar{width:38px;height:38px;border-radius:50%;background:rgba(15,110,79,0.15);border:2px solid #0f6e4f;display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:600;color:#4ade80;flex-shrink:0}
+.eco-dev-name{font-size:0.88rem;font-weight:500;color:#f9f8f7}
+.eco-dev-links{display:flex;gap:0.7rem;margin-top:0.2rem}
+.eco-dev-link{font-family:var(--mono);font-size:0.62rem;color:#4e5663;text-decoration:none;transition:color 0.2s;cursor:none}
+.eco-dev-link:hover{color:#0f6e4f}
+.eco-gh-btn{display:inline-flex;align-items:center;gap:0.5rem;background:rgba(15,110,79,0.1);border:1px solid rgba(15,110,79,0.3);border-radius:3px;padding:0.5rem 0.9rem;font-family:var(--mono);font-size:0.68rem;color:#4ade80;text-decoration:none;transition:border-color 0.2s;cursor:none;margin-top:0.5rem}
+.eco-gh-btn:hover{border-color:#0f6e4f}
+.eco-footer{background:#0f1a14;border-top:1px solid rgba(15,110,79,0.2);padding:0.85rem 1.6rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-shrink:0;flex-wrap:wrap}
+.eco-skip-row{display:flex;align-items:center;gap:0.5rem;cursor:pointer}
+.eco-skip-row input{width:13px;height:13px;accent-color:#0f6e4f;cursor:pointer}
+.eco-skip-label{font-family:var(--mono);font-size:0.63rem;color:#4e5663;letter-spacing:0.06em;user-select:none;cursor:pointer}
+.eco-action-group{display:flex;align-items:center;gap:0.8rem}
+.eco-countdown-wrap{display:flex;align-items:center;gap:0.4rem;font-family:var(--mono);font-size:0.65rem;color:#4e5663;letter-spacing:0.08em}
+.eco-countdown-num{font-size:1rem;font-weight:500;color:#0f6e4f;min-width:1.2rem;text-align:center;transition:color 0.3s}
+.eco-ring{width:30px;height:30px;flex-shrink:0}
+.eco-ring circle{fill:none;stroke-width:2.5;stroke-linecap:round;transform-origin:center;transform:rotate(-90deg)}
+.eco-ring .er-bg{stroke:rgba(15,110,79,0.25)}
+.eco-ring .er-fill{stroke:#0f6e4f;transition:stroke-dashoffset 1s linear}
+.eco-enter-btn{display:inline-flex;align-items:center;gap:0.45rem;background:#0f6e4f;color:#fff;border:none;border-radius:3px;padding:0.55rem 1.2rem;font-size:0.8rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;transition:opacity 0.2s}
+.eco-enter-btn:hover:not(:disabled){opacity:0.85}
+.eco-enter-btn:disabled{opacity:0.3;cursor:not-allowed}
+
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<!-- ═══ NAVBAR ═══ -->
+<nav id="navbar">
+  <a class="logo" href="/">
+    <img src="data:image/png;base64,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" alt="TerraDigital" class="logo-img">
+  </a>
+  <div class="nav-right">
+    <a class="nav-link" onclick="document.getElementById('projects').scrollIntoView({behavior:'smooth'})">Projects</a>
+    <a class="nav-link" onclick="document.getElementById('about').scrollIntoView({behavior:'smooth'})">About</a>
+    <a class="nav-cta" onclick="document.getElementById('contact').scrollIntoView({behavior:'smooth'})">Get in touch</a>
+  </div>
+</nav>
+
+<!-- ═══ CAROUSEL ═══ -->
+<section id="carousel" aria-label="Project showcase">
+
+  <!-- SLIDE 1 — CAL -->
+  <div class="slide active" data-href="https://cal.terradigital.net">
+    <div class="slide-photo" style="background-image:url('images/cal.webp')"></div>
+    <div class="slide-overlay"></div>
+    <div class="slide-content">
+      <div class="slide-label">01 · Analytics Platform</div>
+      <h2 class="slide-title">CAL</h2>
+      <p class="slide-tagline">Referee bias, exposed by data</p>
+      <button class="slide-btn" data-cal="1">
+        Open platform
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SLIDE 2 — SAEIF -->
+  <div class="slide" data-href="#" data-modal="saeif">
+    <div class="slide-photo" style="background-image:url('images/saeif.webp')"></div>
+    <div class="slide-overlay"></div>
+    <div class="slide-content">
+      <div class="slide-label">02 · Geospatial Alert System</div>
+      <h2 class="slide-title">SAEIF</h2>
+      <p class="slide-tagline">Forest fire alerts, before the smoke clears</p>
+      <button class="slide-btn" data-modal="saeif">
+        View system
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SLIDE 3 — ECOTURISMO -->
+  <div class="slide" data-href="#" data-modal="ecoturismo">
+    <div class="slide-photo" style="background-image:url('images/ecoturismo.webp')"></div>
+    <div class="slide-overlay"></div>
+    <div class="slide-content">
+      <div class="slide-label">03 · WebGIS Portal</div>
+      <h2 class="slide-title">Ecoturismo</h2>
+      <p class="slide-tagline">Portugal's trails, mapped and alive</p>
+      <button class="slide-btn" data-modal="ecoturismo">
+        Explore trails
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SLIDE 4 — ARTOP -->
+  <div class="slide" data-href="#" data-modal="artop">
+    <div class="slide-photo" style="background-image:url('images/artop.webp')"></div>
+    <div class="slide-overlay"></div>
+    <div class="slide-content">
+      <div class="slide-label">04 · GIS + Historical Investigation</div>
+      <h2 class="slide-title">ARTOP · CS-THB</h2>
+      <p class="slide-tagline">A 1958 disappearance, reconstructed with GIS</p>
+      <button class="slide-btn" data-modal="artop">
+        Investigate
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SLIDE 5 — ASTROLÁBIO -->
+  <div class="slide" data-href="#" data-modal="astrolabio">
+    <div class="slide-photo" style="background-image:url('images/astrolabio.webp')"></div>
+    <div class="slide-overlay"></div>
+    <div class="slide-content">
+      <div class="slide-label">05 · Online Museum</div>
+      <h2 class="slide-title">Astrolábio</h2>
+      <p class="slide-tagline">The Age of Discovery, reimagined as data</p>
+      <button class="slide-btn" data-modal="astrolabio">
+        Explore museum
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+
+  <!-- SLIDE 6 — ECONOSTATS -->
+  <div class="slide" data-href="https://econostats.terradigital.net" data-econostats="1">
+    <div class="slide-photo" style="background-image:url('images/econostats.webp')"></div>
+    <div class="slide-overlay"></div>
+    <div class="slide-content">
+      <div class="slide-label">06 · Economic Intelligence Dashboard</div>
+      <h2 class="slide-title">EconoStats</h2>
+      <p class="slide-tagline">62 economic indicators, mapped to the territory — Portugal in data</p>
+      <button class="slide-btn" data-econostats="1">
+        Open dashboard
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SLIDE 7 — PONTE DIGITAL -->
+  <div class="slide" data-href="https://social.terradigital.net" data-social="1">
+    <div class="slide-photo" style="background-image:url('images/social.webp')"></div>
+    <div class="slide-overlay"></div>
+    <div class="slide-content">
+      <div class="slide-label">07 · Social Support Platform</div>
+      <h2 class="slide-title">Ponte Digital</h2>
+      <p class="slide-tagline">Connecting vulnerable citizens to social support — Distrito de Lisboa</p>
+      <button class="slide-btn" data-social="1">
+        Open platform
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- SLIDE 8 — STORE (always last) -->
+  <div class="slide" data-href="#" data-modal="store">
+    <div class="slide-photo" style="background-image:url('images/store.webp')"></div>
+    <div class="slide-overlay"></div>
+    <div class="slide-content">
+      <div class="slide-label">08 · Maps, Gear &amp; Resources</div>
+      <h2 class="slide-title">Store</h2>
+      <p class="slide-tagline">Maps, gear and geospatial goods</p>
+      <button class="slide-btn" data-modal="store">
+        Visit store
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="carousel-nav">
+    <div class="dots">
+      <button class="dot active" data-i="0"></button>
+      <button class="dot" data-i="1"></button>
+      <button class="dot" data-i="2"></button>
+      <button class="dot" data-i="3"></button>
+      <button class="dot" data-i="4"></button>
+      <button class="dot" data-i="5"></button>
+      <button class="dot" data-i="6"></button>
+      <button class="dot" data-i="7"></button>
+    </div>
+    <div class="arrow-btns">
+      <button class="arrow-btn" id="prevBtn" aria-label="Previous">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="arrow-btn" id="nextBtn" aria-label="Next">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="slide-counter">
+    <span class="n-current" id="nCurrent">01</span>
+    <span>—</span>
+    <span>08</span>
+  </div>
+
+  <div class="scroll-hint" onclick="document.getElementById('projects').scrollIntoView({behavior:'smooth'})">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+
+  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+</section>
+
+<!-- ═══ PROJECTS ═══ -->
+<section id="projects">
+  <div class="section-header">
+    <div class="eyebrow">Projects</div>
+    <h2 class="section-title">Territorial intelligence<br>at every scale</h2>
+    <p class="section-sub">Six systems built from open-source tools, rigorous data, and the conviction that geography explains almost everything.</p>
+  </div>
+
+  <div class="projects-grid">
+
+    <a class="project-cell" href="#" data-cal="1">
+      <div class="cell-num">01</div>
+      <svg class="cell-icon" viewBox="0 0 44 44" fill="none">
+        <rect x="3" y="3" width="38" height="38" rx="2" stroke="#E8823A" stroke-width="1.2" fill="none"/>
+        <line x1="22" y1="3" x2="22" y2="41" stroke="#E8823A" stroke-width="0.7" opacity="0.35"/>
+        <line x1="3" y1="22" x2="41" y2="22" stroke="#E8823A" stroke-width="0.7" opacity="0.35"/>
+        <path d="M8 32L16 22L22 27L30 18L38 14" stroke="#E8823A" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="16" cy="22" r="2.5" fill="#E8823A" opacity="0.7"/>
+        <circle cx="30" cy="18" r="2.5" fill="#E8823A" opacity="0.7"/>
+      </svg>
+      <div class="cell-tag">CAL</div>
+      <div class="cell-title">Referee Bias Analytics</div>
+      <p class="cell-desc">Statistical detection of systematic bias in Portuguese Primeira Liga officiating. Binomial tests, FDR correction, home advantage index.</p>
+      <div class="cell-status"><div class="sdot live"></div><span style="color:#4caf76">Live · cal.terradigital.net</span></div>
+    </a>
+
+    <a class="project-cell" href="#" data-modal="saeif">
+      <div class="cell-num">02</div>
+      <svg class="cell-icon" viewBox="0 0 44 44" fill="none">
+        <circle cx="22" cy="22" r="18" stroke="#E8823A" stroke-width="1.2" fill="none" stroke-dasharray="4 2.5"/>
+        <path d="M18 30Q20 20 22 14Q24 20 26 30" fill="#E8823A" opacity="0.65"/>
+        <path d="M19 32Q22 28 25 32" stroke="#E8823A" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <circle cx="22" cy="22" r="4" fill="none" stroke="#E8823A" stroke-width="0.7" opacity="0.4"/>
+      </svg>
+      <div class="cell-tag">SAEIF</div>
+      <div class="cell-title">Forest Fire Alert System</div>
+      <p class="cell-desc">Real-time fire risk mapping using IPMA weather data and NASA FIRMS satellite thermal anomalies over the Portuguese territory.</p>
+      <div class="cell-status"><div class="sdot dev"></div><span style="color:var(--muted)">In development</span></div>
+    </a>
+
+    <a class="project-cell" href="#" data-modal="ecoturismo">
+      <div class="cell-num">03</div>
+      <svg class="cell-icon" viewBox="0 0 44 44" fill="none">
+        <path d="M6 38Q13 18 22 10Q31 18 38 38" stroke="#E8823A" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <line x1="4" y1="30" x2="40" y2="30" stroke="#E8823A" stroke-width="0.7" opacity="0.3"/>
+        <circle cx="22" cy="10" r="3" fill="#E8823A"/>
+        <circle cx="14" cy="26" r="2" fill="#E8823A" opacity="0.55"/>
+        <circle cx="30" cy="20" r="2" fill="#E8823A" opacity="0.55"/>
+        <path d="M14 26L30 20" stroke="#E8823A" stroke-width="1" stroke-dasharray="3 2" opacity="0.45"/>
+      </svg>
+      <div class="cell-tag">Ecoturismo</div>
+      <div class="cell-title">Trail Map Portal</div>
+      <p class="cell-desc">Interactive WebGIS of Portugal's hiking trails with GPX upload, elevation profiles from SRTM, and biodiversity overlays via GeoDjango.</p>
+      <div class="cell-status"><div class="sdot dev"></div><span style="color:var(--muted)">In development</span></div>
+    </a>
+
+    <a class="project-cell" href="#" data-modal="artop">
+      <div class="cell-num">04</div>
+      <svg class="cell-icon" viewBox="0 0 44 44" fill="none">
+        <circle cx="22" cy="22" r="17" stroke="#E8823A" stroke-width="1.2" fill="none" stroke-dasharray="5 3"/>
+        <circle cx="22" cy="22" r="3" fill="#E8823A"/>
+        <path d="M22 5L24 16L22 19L20 16Z" fill="#E8823A" opacity="0.6"/>
+        <circle cx="32" cy="14" r="4.5" fill="none" stroke="#E8823A" stroke-width="1"/>
+        <circle cx="32" cy="14" r="1.5" fill="#E8823A" opacity="0.5">
+          <animate attributeName="opacity" values="0.5;1;0.5" dur="2.2s" repeatCount="indefinite"/>
+        </circle>
+        <line x1="22" y1="22" x2="32" y2="14" stroke="#E8823A" stroke-width="0.8" stroke-dasharray="3 2" opacity="0.4"/>
+      </svg>
+      <div class="cell-tag">ARTOP · CS-THB</div>
+      <div class="cell-title">1958 Disappearance</div>
+      <p class="cell-desc">GIS-based reconstruction of the CS-THB seaplane's last known position using the ARTOP accident report and ocean bathymetry data.</p>
+      <div class="cell-status"><div class="sdot dev"></div><span style="color:var(--muted)">In development</span></div>
+    </a>
+
+    <a class="project-cell" href="#" data-modal="astrolabio">
+      <div class="cell-num">05</div>
+      <svg class="cell-icon" viewBox="0 0 44 44" fill="none">
+        <circle cx="22" cy="22" r="17" stroke="#E8823A" stroke-width="1.2" fill="none"/>
+        <circle cx="22" cy="22" r="10" stroke="#E8823A" stroke-width="0.7" fill="none" opacity="0.45"/>
+        <circle cx="22" cy="22" r="3" fill="#E8823A"/>
+        <line x1="22" y1="5" x2="22" y2="39" stroke="#E8823A" stroke-width="0.7" opacity="0.35"/>
+        <line x1="5" y1="22" x2="39" y2="22" stroke="#E8823A" stroke-width="0.7" opacity="0.35"/>
+        <line x1="14" y1="4" x2="17" y2="12" stroke="#E8823A" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <div class="cell-tag">Astrolábio</div>
+      <div class="cell-title">Age of Discovery Museum</div>
+      <p class="cell-desc">An interactive online museum mapping Portuguese maritime exploration routes, using portolan charts and modern geospatial visualisation.</p>
+      <div class="cell-status"><div class="sdot"></div><span style="color:var(--muted)">Planned · Phase 3</span></div>
+    </a>
+
+    <a class="project-cell" href="#" data-modal="store">
+      <div class="cell-num">08</div>
+      <svg class="cell-icon" viewBox="0 0 44 44" fill="none">
+        <rect x="5" y="17" width="34" height="24" rx="2" stroke="#E8823A" stroke-width="1.2" fill="none"/>
+        <path d="M14 17Q14 7 22 7Q30 7 30 17" stroke="#E8823A" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <circle cx="22" cy="29" r="4" stroke="#E8823A" stroke-width="1.2" fill="none"/>
+        <line x1="18" y1="29" x2="9" y2="29" stroke="#E8823A" stroke-width="0.8" opacity="0.45"/>
+        <line x1="26" y1="29" x2="35" y2="29" stroke="#E8823A" stroke-width="0.8" opacity="0.45"/>
+      </svg>
+      <div class="cell-tag">Store</div>
+      <div class="cell-title">Maps &amp; Geospatial Goods</div>
+      <p class="cell-desc">Printed maps, GIS-themed apparel, and digital resources: datasets, QGIS styles, Python scripts, and cartographic tutorials via Gumroad.</p>
+      <div class="cell-status"><div class="sdot"></div><span style="color:var(--muted)">Planned · Phase 3</span></div>
+    </a>
+
+
+    <a class="project-cell" href="#" data-econostats="1">
+      <div class="cell-num">06</div>
+      <svg class="cell-icon" viewBox="0 0 44 44" fill="none">
+        <rect x="4" y="28" width="8" height="12" stroke="#E8823A" stroke-width="1.2" fill="none"/>
+        <rect x="14" y="20" width="8" height="20" stroke="#E8823A" stroke-width="1.2" fill="none"/>
+        <rect x="24" y="14" width="8" height="26" stroke="#E8823A" stroke-width="1.2" fill="none"/>
+        <rect x="34" y="8" width="8" height="32" stroke="#E8823A" stroke-width="1.2" fill="none"/>
+        <path d="M4 26 Q10 18 18 16 Q26 14 34 8" stroke="#E8823A" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+        <circle cx="34" cy="8" r="2" fill="#E8823A"/>
+      </svg>
+      <div class="cell-tag">EconoStats</div>
+      <div class="cell-title">Economic Intelligence</div>
+      <p class="cell-desc">Public dashboard of 62 Portuguese economic indicators with a GIS layer — linking macro data to territory, industrial clusters, and company profiles.</p>
+      <div class="cell-status"><div class="sdot dev"></div><span style="color:var(--muted)">In development</span></div>
+    </a>
+
+
+    <a class="project-cell" href="#" data-social="1">
+      <div class="cell-num">07</div>
+      <svg class="cell-icon" viewBox="0 0 44 44" fill="none">
+        <circle cx="22" cy="18" r="10" stroke="#E8823A" stroke-width="1.2" fill="none"/>
+        <path d="M22 28 L22 38" stroke="#E8823A" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M14 38 L30 38" stroke="#E8823A" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M16 14 Q22 8 28 14" stroke="#E8823A" stroke-width="1" fill="none" stroke-linecap="round"/>
+        <circle cx="22" cy="18" r="3" fill="#E8823A" opacity="0.7"/>
+        <path d="M8 30 Q6 22 12 18" stroke="#E8823A" stroke-width="0.8" fill="none" stroke-dasharray="2 2" opacity="0.5"/>
+        <path d="M36 30 Q38 22 32 18" stroke="#E8823A" stroke-width="0.8" fill="none" stroke-dasharray="2 2" opacity="0.5"/>
+      </svg>
+      <div class="cell-tag">Ponte Digital</div>
+      <div class="cell-title">Social Support Platform</div>
+      <p class="cell-desc">Free public platform aggregating and georeferencing social support resources across 16 municipalities of the Lisbon District — food, health, employment, housing and education.</p>
+      <div class="cell-status"><div class="sdot live"></div><span style="color:#4caf76">Live · social.terradigital.net</span></div>
+    </a>
+
+  </div>
+</section>
+
+<!-- ═══ ABOUT ═══ -->
+<section id="about">
+  <div class="about-inner">
+    <div>
+      <div class="about-eyebrow">About TerraDigital</div>
+      <h2 class="about-heading">Geography is not<br>background noise —<br><em>it is the signal.</em></h2>
+      <p class="about-body">TerraDigital is the practice of Pedro Pestana, a GIS specialist and software developer based in Torres Vedras, Portugal. With over 40 years in software and a decade focused on spatial data engineering, the work here sits at the intersection of open-source GIS, rigorous statistical method, and systems that are genuinely useful.</p>
+      <p class="about-body">The platform is built entirely on open tools — PostGIS, GeoServer, QGIS, Python, Leaflet.js — and self-hosted on a Hetzner Cloud VPS. Nothing here is a demo. Every system shown is real, or being built to be.</p>
+    </div>
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-n">40+</div><div class="stat-l">Years in software, from Cobol/IMS to GeoDjango</div></div>
+      <div class="stat"><div class="stat-n">6</div><div class="stat-l">Projects spanning sport, fire, ecology, history, culture, commerce</div></div>
+      <div class="stat"><div class="stat-n">100%</div><div class="stat-l">Open-source stack: PostGIS · Leaflet · QGIS · Python</div></div>
+      <div class="stat"><div class="stat-n">1</div><div class="stat-l">Solo practice, Torres Vedras, Portugal</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CONTACT ═══ -->
+<section id="contact">
+  <div class="contact-inner">
+    <div>
+      <h2 class="contact-heading">Let's talk<br><em>territory.</em></h2>
+      <p class="contact-body">Whether it's a GIS consulting project, a collaboration on spatial data, a question about one of the systems, or a custom map — get in touch.</p>
+      <div class="contact-detail">
+        <div class="contact-row">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/><path d="M1 5l6 4 6-4" stroke="currentColor" stroke-width="1.2"/></svg>
+          <a href="mailto:info@terradigital.net">info@terradigital.net</a>
+        </div>
+        <div class="contact-row">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1C4.24 1 2 3.24 2 6c0 3.75 5 8 5 8s5-4.25 5-8c0-2.76-2.24-5-5-5z" stroke="currentColor" stroke-width="1.2"/><circle cx="7" cy="6" r="1.5" stroke="currentColor" stroke-width="1.2"/></svg>
+          Torres Vedras, Portugal
+        </div>
+        <div class="contact-row">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M7 4v3.5l2.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          CET (UTC+1) · Response within 24 hours
+        </div>
+        <div class="contact-row" style="margin-top:0.3rem">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1a6 6 0 100 12A6 6 0 007 1zM1 7h12M7 1c-1.5 2-2.5 3.8-2.5 6s1 4 2.5 6M7 1c1.5 2 2.5 3.8 2.5 6s-1 4-2.5 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          <a href="https://www.pedropestana.com" target="_blank">pedropestana.com</a>
+        </div>
+      </div>
+    </div>
+
+    <form class="contact-form" id="contactForm">
+      <div class="form-row">
+        <div class="field">
+          <label for="f-name">Name</label>
+          <input type="text" id="f-name" name="name" placeholder="Your name" required>
+        </div>
+        <div class="field">
+          <label for="f-email">Email</label>
+          <input type="email" id="f-email" name="email" placeholder="you@example.com" required>
+        </div>
+      </div>
+      <div class="field">
+        <label for="f-subject">Subject</label>
+        <select id="f-subject" name="subject">
+          <option value="">Select a topic…</option>
+          <option>GIS Consulting</option>
+          <option>Custom Mapping</option>
+          <option>Spatial Data Engineering</option>
+          <option>WebGIS Development</option>
+          <option>CAL — Referee Analytics</option>
+          <option>SAEIF — Fire Alerts</option>
+          <option>Ecoturismo — Trail Mapping</option>
+          <option>ARTOP / CS-THB Investigation</option>
+          <option>Store — Maps &amp; Resources</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-msg">Message</label>
+        <textarea id="f-msg" name="message" placeholder="Tell me about your project or question…" required></textarea>
+      </div>
+      <button type="submit" class="form-submit">
+        Send message
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 7h10M9 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+      <div class="form-success" id="formSuccess">✓ Message sent. I'll get back to you within 24 hours.</div>
+    </form>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-made">Made by TerraDigital</div>
+      <p class="footer-desc">GIS consulting and spatial data engineering from Torres Vedras, Portugal. Open-source tools, rigorous method, real systems.</p>
+      <div class="social-row">
+        <a class="social-btn" href="https://github.com/ppestana" target="_blank" aria-label="GitHub">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        </a>
+        <a class="social-btn" href="https://www.linkedin.com/in/terradigital-net" target="_blank" aria-label="LinkedIn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016l.016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"/></svg>
+        </a>
+        <a class="social-btn" href="https://www.instagram.com/terradigital_net" target="_blank" aria-label="Instagram">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+        </a>
+        <a class="social-btn" href="https://bsky.app/profile/terradigital-net.bsky.social" target="_blank" aria-label="Bluesky">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-col-title">Projects</div>
+      <ul class="footer-links">
+        <li><a href="#" data-cal="1">CAL — Referee Analytics</a></li>
+        <li><a href="#" data-econostats="1">EconoStats — Economic Dashboard</a></li>
+        <li><a href="#" data-social="1">Ponte Digital — Social Platform</a></li>
+        <li><a href="#" data-modal="saeif" target="_blank">SAEIF — Fire Alerts</a></li>
+        <li><a href="#" data-modal="ecoturismo" target="_blank">Ecoturismo — Trail Maps</a></li>
+        <li><a href="#" data-modal="artop" target="_blank">ARTOP — CS-THB</a></li>
+        <li><a href="#" data-modal="astrolabio">Astrolábio</a></li>
+        <li><a href="#" data-modal="store" target="_blank">Store</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-col-title">Contact</div>
+      <ul class="footer-links">
+        <li><a href="mailto:info@terradigital.net">info@terradigital.net</a></li>
+        <li><a href="https://www.pedropestana.com" target="_blank">pedropestana.com</a></li>
+      </ul>
+
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 TerraDigital · Pedro Pestana · Torres Vedras, Portugal</span>
+    <a href="mailto:info@terradigital.net">info@terradigital.net</a>
+  </div>
+</footer>
+
+<!-- ═══ JAVASCRIPT ═══ -->
+
+
+<!-- ═══ ECONOSTATS SPLASH MODAL ═══ -->
+<div id="econostats-splash" role="dialog" aria-modal="true">
+  <div class="eco-panel">
+    <div class="eco-header">
+      <div style="display:flex;align-items:baseline;">
+        <span class="eco-sigla">EconoStats</span>
+        <span class="eco-subname">Economic Intelligence Dashboard</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.8rem;">
+        <span class="eco-version">v0.1 · In Development</span>
+        <button class="eco-close" id="ecoClose" aria-label="Close">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="eco-body">
+
+      <div class="eco-block">
+        <div class="eco-block-head"><span class="eco-block-num">01</span><span class="eco-block-title">Project Overview</span></div>
+        <div class="eco-block-body">
+          <p>EconoStats Portugal is a public dashboard of <strong>62 economic indicators</strong> organised in 9 thematic modules, with a unique GIS layer that links macro data to the territory — showing not just that footwear fell −5.6%, but that this means pressure on Felgueiras and Guimarães, with clickable company profiles.</p>
+          <p>Data from official sources: <strong>GEE, INE, Banco de Portugal, Eurostat, IEFP</strong>. All comparisons use year-on-year variation to eliminate seasonality.</p>
+        </div>
+      </div>
+
+      <div class="eco-block">
+        <div class="eco-block-head"><span class="eco-block-num">02</span><span class="eco-block-title">Developer</span></div>
+        <div class="eco-block-body">
+          <div class="eco-dev-row">
+            <div class="eco-dev-avatar">PP</div>
+            <div>
+              <div class="eco-dev-name">Pedro Pestana</div>
+              <div class="eco-dev-links">
+                <a class="eco-dev-link" href="https://www.pedropestana.com" target="_blank">pedropestana.com</a>
+                <a class="eco-dev-link" href="https://www.terradigital.net" target="_blank">terradigital.net</a>
+                <a class="eco-dev-link" href="https://www.linkedin.com/in/pmpestana" target="_blank">LinkedIn</a>
+              </div>
+            </div>
+          </div>
+          <p>GIS specialist and software developer based in Torres Vedras, Portugal. EconoStats combines 40+ years of software experience with geospatial expertise to make Portuguese economic data genuinely accessible.</p>
+        </div>
+      </div>
+
+      <div class="eco-block">
+        <div class="eco-block-head"><span class="eco-block-num">03</span><span class="eco-block-title">AI Assistance Disclaimer</span></div>
+        <div class="eco-block-body">
+          <p>In compliance with the <strong>EU AI Act</strong> (Regulation EU 2024/1689). Tool used: Claude (Anthropic, 2025–2026), as a programming and documentation assistant.</p>
+          <table class="eco-ai-table">
+            <thead><tr><th>Scope</th><th>AI Usage</th><th>Human Responsibility</th></tr></thead>
+            <tbody>
+              <tr><td>Code</td><td>Assisted generation of pipeline, models and dashboard code</td><td>All code reviewed and validated by the author</td></tr>
+              <tr><td>Documentation</td><td>Structuring of architecture document</td><td>Content and design decisions by the author</td></tr>
+              <tr><td>Data</td><td>No data generated or modified by AI</td><td>All sources are official and public</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="eco-block">
+        <div class="eco-block-head"><span class="eco-block-num">04</span><span class="eco-block-title">Technical Implementation</span></div>
+        <div class="eco-block-body">
+          <p>Django + GeoDjango backend with HTMX for dynamic updates without full page reloads. PostgreSQL + PostGIS for time-series data and spatial queries. Leaflet.js for interactive maps with industrial cluster layers. Chart.js for time-series and D3.js for NUT III choropleths.</p>
+          <p><strong>GIS differentiator:</strong> geocoded industrial locations (~200 companies in MVP) linked to live economic indicators — when a subsector moves, the map highlights affected municipalities and company profiles update in real time.</p>
+        </div>
+      </div>
+
+      <div class="eco-block">
+        <div class="eco-block-head"><span class="eco-block-num">05</span><span class="eco-block-title">Technologies Used</span></div>
+        <div class="eco-block-body">
+          <div class="eco-pill-row">
+            <span class="eco-pill">Django + GeoDjango</span>
+            <span class="eco-pill">Python 3.12</span>
+            <span class="eco-pill">PostgreSQL + PostGIS</span>
+            <span class="eco-pill b">HTMX · Alpine.js</span>
+            <span class="eco-pill b">Leaflet.js · D3.js</span>
+            <span class="eco-pill b">Chart.js · Tailwind CSS</span>
+            <span class="eco-pill w">Gunicorn · Nginx</span>
+            <span class="eco-pill w">GitHub Actions · Hetzner</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="eco-block">
+        <div class="eco-block-head"><span class="eco-block-num">06</span><span class="eco-block-title">View Code</span></div>
+        <div class="eco-block-body">
+          <p>The EconoStats source code is available on GitHub.</p>
+          <a class="eco-gh-btn" href="https://github.com/ppestana/econostats" target="_blank">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            github.com/ppestana/econostats
+          </a>
+        </div>
+      </div>
+
+    </div>
+    <div class="eco-footer">
+      <label class="eco-skip-row">
+        <input type="checkbox" id="ecoSkipCheck">
+        <span class="eco-skip-label">Don't show this again</span>
+      </label>
+      <div class="eco-action-group">
+        <div class="eco-countdown-wrap">
+          <svg class="eco-ring" viewBox="0 0 36 36">
+            <circle class="er-bg" cx="18" cy="18" r="15.5"/>
+            <circle class="er-fill" cx="18" cy="18" r="15.5"
+                    id="ecoRingFill" stroke-dasharray="97.4" stroke-dashoffset="0"/>
+          </svg>
+          <span id="ecoCountNum" class="eco-countdown-num">5</span>
+          <span>sec</span>
+        </div>
+        <button id="ecoEnterBtn" disabled style="display:inline-flex;align-items:center;gap:0.45rem;background:#0f6e4f;color:#fff;border:none;border-radius:3px;padding:0.55rem 1.2rem;font-size:0.8rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;opacity:0.3;">
+          Open dashboard
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SOCIAL SPLASH MODAL ═══ -->
+<div id="social-splash" role="dialog" aria-modal="true">
+  <div class="social-panel">
+    <div class="social-header">
+      <div style="display:flex;align-items:baseline;">
+        <span class="social-sigla">Ponte Digital</span>
+        <span class="social-subname">Social Support Platform</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.8rem;">
+        <span class="social-version">v1.1 · Fase 1 · Em Produção</span>
+        <button class="social-close" id="socialClose" aria-label="Close">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="social-body">
+
+      <div class="social-block">
+        <div class="social-block-head"><span class="social-block-num">01</span><span class="social-block-title">Project Overview</span></div>
+        <div class="social-block-body">
+          <p>Ponte Digital is a free, public, non-profit web platform that aggregates, georeferences and publishes information about social support resources across the <strong>16 municipalities of the Lisbon District</strong>.</p>
+          <p>Its central purpose is to eliminate the information gap that prevents citizens in economic vulnerability from accessing existing services. Currently <strong>36 verified resources</strong> are live, covering alimentação, saúde, emprego, apoio social and educação.</p>
+        </div>
+      </div>
+
+      <div class="social-block">
+        <div class="social-block-head"><span class="social-block-num">02</span><span class="social-block-title">Developer</span></div>
+        <div class="social-block-body">
+          <div class="social-dev-row">
+            <div class="social-dev-avatar">PP</div>
+            <div>
+              <div class="social-dev-name">Pedro Pestana</div>
+              <div class="social-dev-links">
+                <a class="social-dev-link" href="https://www.pedropestana.com" target="_blank">pedropestana.com</a>
+                <a class="social-dev-link" href="https://www.terradigital.net" target="_blank">terradigital.net</a>
+                <a class="social-dev-link" href="https://www.linkedin.com/in/pmpestana" target="_blank">LinkedIn</a>
+              </div>
+            </div>
+          </div>
+          <p>GIS specialist and software developer based in Torres Vedras, Portugal. Ponte Digital applies 40+ years of software experience to a project of measurable social impact.</p>
+        </div>
+      </div>
+
+      <div class="social-block">
+        <div class="social-block-head"><span class="social-block-num">03</span><span class="social-block-title">AI Assistance Disclaimer</span></div>
+        <div class="social-block-body">
+          <p>In compliance with the <strong>EU AI Act</strong> (Regulation EU 2024/1689). Tool used: Claude (Anthropic, 2025–2026), as a programming and documentation assistant.</p>
+          <table class="social-ai-table">
+            <thead><tr><th>Scope</th><th>AI Usage</th><th>Human Responsibility</th></tr></thead>
+            <tbody>
+              <tr><td>Code</td><td>Assisted generation of API, frontend and pipeline code</td><td>All code reviewed and validated by the author</td></tr>
+              <tr><td>Documentation</td><td>Structuring of architecture document</td><td>Content and design decisions by the author</td></tr>
+              <tr><td>Data</td><td>No data generated or modified by AI</td><td>All resources manually verified from official sources</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="social-block">
+        <div class="social-block-head"><span class="social-block-num">04</span><span class="social-block-title">Technical Implementation</span></div>
+        <div class="social-block-body">
+          <p>Layered architecture with clear separation between the public frontend, REST API, geospatial database, and curation CMS. All components run on self-hosted Hetzner Cloud, ensuring full data control and GDPR compliance.</p>
+          <p><strong>Data sources:</strong> IEFP, Segurança Social, Misericórdias, Cruz Vermelha, Médicos do Mundo, Câmaras Municipais. Geocodified via Nominatim (OpenStreetMap). Spatial queries via PostGIS — resources findable by proximity radius, municipality and parish.</p>
+        </div>
+      </div>
+
+      <div class="social-block">
+        <div class="social-block-head"><span class="social-block-num">05</span><span class="social-block-title">Technologies Used</span></div>
+        <div class="social-block-body">
+          <div class="social-pill-row">
+            <span class="social-pill">FastAPI · Python 3.12</span>
+            <span class="social-pill">PostgreSQL 16 + PostGIS 3.4</span>
+            <span class="social-pill">Svelte / HTML static</span>
+            <span class="social-pill">Leaflet.js · OpenStreetMap</span>
+            <span class="social-pill warm">Redis 7 · Nominatim</span>
+            <span class="social-pill warm">Sveltia CMS · GitHub Actions</span>
+            <span class="social-pill green">Nginx · Certbot · Ubuntu 24.04</span>
+            <span class="social-pill green">Hetzner Cloud · Object Storage</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="social-block">
+        <div class="social-block-head"><span class="social-block-num">06</span><span class="social-block-title">View Code</span></div>
+        <div class="social-block-body">
+          <p>The Ponte Digital source code is available on GitHub.</p>
+          <a class="social-gh-btn" href="https://github.com/ppestana/social" target="_blank">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            github.com/ppestana/social
+          </a>
+        </div>
+      </div>
+
+    </div>
+    <div class="social-footer">
+      <label class="social-skip-row">
+        <input type="checkbox" id="socialSkipCheck">
+        <span class="social-skip-label">Don't show this again</span>
+      </label>
+      <div class="social-action-group">
+        <div class="social-countdown-wrap">
+          <svg class="social-ring" viewBox="0 0 36 36">
+            <circle class="sr-bg" cx="18" cy="18" r="15.5"/>
+            <circle class="sr-fill" cx="18" cy="18" r="15.5"
+                    id="socialRingFill" stroke-dasharray="97.4" stroke-dashoffset="0"/>
+          </svg>
+          <span id="socialCountNum" class="social-countdown-num">5</span>
+          <span>sec</span>
+        </div>
+        <button id="socialEnterBtn" disabled style="display:inline-flex;align-items:center;gap:0.45rem;background:#2C5F8A;color:#fff;border:none;border-radius:3px;padding:0.55rem 1.2rem;font-size:0.8rem;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;cursor:pointer;opacity:0.3;">
+          Enter platform
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CAL SPLASH MODAL ═══ -->
+<div id="cal-splash" role="dialog" aria-modal="true" style="position:fixed;inset:0;z-index:6000;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity 0.4s ease,visibility 0.4s ease;background:rgba(10,10,12,0.92);backdrop-filter:blur(6px);">
+  <div style="position:relative;width:min(820px,94vw);max-height:90vh;overflow:hidden;display:flex;flex-direction:column;background:#0d0f10;border:1px solid #2a2e34;border-radius:4px;box-shadow:0 40px 80px rgba(0,0,0,0.7);transform:translateY(24px) scale(0.97);transition:transform 0.45s cubic-bezier(0.16,1,0.3,1);" id="calPanel">
+    <!-- Header -->
+    <div style="background:#141618;border-bottom:2px solid #f5a623;padding:1rem 1.6rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="display:flex;align-items:baseline;gap:0.8rem;">
+        <span style="font-family:'Oswald','Outfit',sans-serif;font-size:1.8rem;font-weight:600;letter-spacing:4px;color:#f5a623;">CAL</span>
+        <span style="font-size:0.75rem;color:#8a929e;font-weight:300;">Criticar a Arbitragem Legalmente</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.8rem;">
+        <span style="font-family:'DM Mono',monospace;font-size:0.62rem;color:#f5a623;background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.3);border-radius:3px;padding:0.2rem 0.5rem;letter-spacing:0.1em;">v0.9.1 · Technical Brief</span>
+        <button id="calClose" style="width:30px;height:30px;border:1px solid rgba(232,228,220,0.15);border-radius:2px;background:rgba(12,12,14,0.5);color:#8a929e;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+    <!-- Scrollable body -->
+    <div style="flex:1;overflow-y:auto;padding:1.4rem 1.6rem 1rem;">
+
+      <!-- 01 Overview -->
+      <div style="margin-bottom:1.2rem;border:1px solid #2a2e34;border-radius:3px;overflow:hidden;">
+        <div style="background:#141618;border-bottom:1px solid #2a2e34;padding:0.5rem 1rem;display:flex;align-items:center;gap:0.6rem;">
+          <span style="font-family:'DM Mono',monospace;font-size:0.58rem;color:#f5a623;background:rgba(245,166,35,0.1);border-radius:2px;padding:0.1rem 0.35rem;letter-spacing:0.12em;">01</span>
+          <span style="font-size:0.78rem;font-weight:500;color:#fff;text-transform:uppercase;letter-spacing:0.06em;">Project Overview</span>
+        </div>
+        <div style="padding:1rem 1.2rem;background:#1c1f22;">
+          <p style="font-size:0.8rem;color:#8a929e;font-weight:300;line-height:1.75;margin-bottom:0.5rem;">CAL is a data analytics system that quantifies deviations between <strong style="color:#d4d8de;">expected</strong> and <strong style="color:#d4d8de;">observed</strong> refereeing decisions in the Portuguese Primeira Liga, covering seasons 2017/18 to 2025/26.</p>
+          <p style="font-size:0.8rem;color:#8a929e;font-weight:300;line-height:1.75;margin-bottom:0.5rem;">For each referee, season, and decision type, the system calculates <strong style="color:#d4d8de;">binomial Z-scores</strong> and a composite <strong style="color:#d4d8de;">SuspicionScore</strong>. Covers <strong style="color:#d4d8de;">2,673 matches</strong> across 9 seasons with 98.4% referee coverage.</p>
+          <p style="font-size:0.8rem;color:#8a929e;font-weight:300;line-height:1.75;"><strong style="color:#d4d8de;">Important:</strong> CAL does not constitute accusation. It identifies statistically anomalous patterns that merit public scrutiny.</p>
+        </div>
+      </div>
+
+      <!-- 02 Developer -->
+      <div style="margin-bottom:1.2rem;border:1px solid #2a2e34;border-radius:3px;overflow:hidden;">
+        <div style="background:#141618;border-bottom:1px solid #2a2e34;padding:0.5rem 1rem;display:flex;align-items:center;gap:0.6rem;">
+          <span style="font-family:'DM Mono',monospace;font-size:0.58rem;color:#f5a623;background:rgba(245,166,35,0.1);border-radius:2px;padding:0.1rem 0.35rem;letter-spacing:0.12em;">02</span>
+          <span style="font-size:0.78rem;font-weight:500;color:#fff;text-transform:uppercase;letter-spacing:0.06em;">Developer</span>
+        </div>
+        <div style="padding:1rem 1.2rem;background:#1c1f22;">
+          <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.8rem;">
+            <div style="width:40px;height:40px;border-radius:50%;background:#141618;border:2px solid #f5a623;display:flex;align-items:center;justify-content:center;font-size:0.95rem;font-weight:600;color:#f5a623;flex-shrink:0;">PP</div>
+            <div>
+              <div style="font-size:0.9rem;font-weight:500;color:#fff;">Pedro Pestana</div>
+              <div style="display:flex;gap:0.7rem;margin-top:0.2rem;">
+                <a href="https://www.pedropestana.com" target="_blank" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:#4e5663;text-decoration:none;">pedropestana.com</a>
+                <a href="https://www.terradigital.net" target="_blank" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:#4e5663;text-decoration:none;">terradigital.net</a>
+                <a href="https://www.linkedin.com/in/pmpestana" target="_blank" style="font-family:'DM Mono',monospace;font-size:0.65rem;color:#4e5663;text-decoration:none;">LinkedIn</a>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:0.8rem;color:#8a929e;font-weight:300;line-height:1.75;">GIS specialist and software developer based in Torres Vedras, Portugal, with over 40 years in software development. CAL was built as a solo project combining statistical modelling, data engineering, and open-source software.</p>
+        </div>
+      </div>
+
+      <!-- 03 AI Disclaimer -->
+      <div style="margin-bottom:1.2rem;border:1px solid #2a2e34;border-radius:3px;overflow:hidden;">
+        <div style="background:#141618;border-bottom:1px solid #2a2e34;padding:0.5rem 1rem;display:flex;align-items:center;gap:0.6rem;">
+          <span style="font-family:'DM Mono',monospace;font-size:0.58rem;color:#f5a623;background:rgba(245,166,35,0.1);border-radius:2px;padding:0.1rem 0.35rem;letter-spacing:0.12em;">03</span>
+          <span style="font-size:0.78rem;font-weight:500;color:#fff;text-transform:uppercase;letter-spacing:0.06em;">AI Assistance Disclaimer</span>
+        </div>
+        <div style="padding:1rem 1.2rem;background:#1c1f22;">
+          <p style="font-size:0.8rem;color:#8a929e;font-weight:300;line-height:1.75;margin-bottom:0.8rem;">In compliance with the <strong style="color:#d4d8de;">EU AI Act</strong> (Regulation EU 2024/1689). Tool used: Claude (Anthropic, 2025–2026), as a programming and documentation assistant.</p>
+          <table style="width:100%;border-collapse:collapse;font-size:0.75rem;">
+            <thead><tr>
+              <th style="font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:#4e5663;border-bottom:1px solid #2a2e34;padding:0.4rem 0.6rem;text-align:left;background:#141618;">Scope</th>
+              <th style="font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:#4e5663;border-bottom:1px solid #2a2e34;padding:0.4rem 0.6rem;text-align:left;background:#141618;">AI Usage</th>
+              <th style="font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.1em;text-transform:uppercase;color:#4e5663;border-bottom:1px solid #2a2e34;padding:0.4rem 0.6rem;text-align:left;background:#141618;">Human Responsibility</th>
+            </tr></thead>
+            <tbody>
+              <tr><td style="padding:0.45rem 0.6rem;border-bottom:1px solid #2a2e34;color:#d4d8de;font-weight:400;vertical-align:top;white-space:nowrap;">Python / SQL</td><td style="padding:0.45rem 0.6rem;border-bottom:1px solid #2a2e34;color:#8a929e;font-weight:300;vertical-align:top;">Assisted code generation for pipeline, models, dashboard</td><td style="padding:0.45rem 0.6rem;border-bottom:1px solid #2a2e34;color:#8a929e;font-weight:300;vertical-align:top;">All code reviewed and validated by the author</td></tr>
+              <tr><td style="padding:0.45rem 0.6rem;border-bottom:1px solid #2a2e34;color:#d4d8de;font-weight:400;vertical-align:top;white-space:nowrap;">Documentation</td><td style="padding:0.45rem 0.6rem;border-bottom:1px solid #2a2e34;color:#8a929e;font-weight:300;vertical-align:top;">Structuring of architecture doc and academic paper</td><td style="padding:0.45rem 0.6rem;border-bottom:1px solid #2a2e34;color:#8a929e;font-weight:300;vertical-align:top;">Analytical content and design decisions by the author</td></tr>
+              <tr><td style="padding:0.45rem 0.6rem;border-bottom:1px solid #2a2e34;color:#d4d8de;font-weight:400;vertical-align:top;white-space:nowrap;">Statistics</td><td style="padding:0.45rem 0.6rem;border-bottom:1px solid #2a2e34;color:#8a929e;font-weight:300;vertical-align:top;">Review of mathematical formulations</td><td style="padding:0.45rem 0.6rem;border-bottom:1px solid #2a2e34;color:#8a929e;font-weight:300;vertical-align:top;">Methodological design and interpretation by the author</td></tr>
+              <tr><td style="padding:0.45rem 0.6rem;color:#d4d8de;font-weight:400;vertical-align:top;white-space:nowrap;">Data</td><td style="padding:0.45rem 0.6rem;color:#8a929e;font-weight:300;vertical-align:top;">No data generated or modified by AI</td><td style="padding:0.45rem 0.6rem;color:#8a929e;font-weight:300;vertical-align:top;">All sources are public and verifiable</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 04 Technical Implementation -->
+      <div style="margin-bottom:1.2rem;border:1px solid #2a2e34;border-radius:3px;overflow:hidden;">
+        <div style="background:#141618;border-bottom:1px solid #2a2e34;padding:0.5rem 1rem;display:flex;align-items:center;gap:0.6rem;">
+          <span style="font-family:'DM Mono',monospace;font-size:0.58rem;color:#f5a623;background:rgba(245,166,35,0.1);border-radius:2px;padding:0.1rem 0.35rem;letter-spacing:0.12em;">04</span>
+          <span style="font-size:0.78rem;font-weight:500;color:#fff;text-transform:uppercase;letter-spacing:0.06em;">Technical Implementation</span>
+        </div>
+        <div style="padding:1rem 1.2rem;background:#1c1f22;">
+          <p style="font-size:0.8rem;color:#8a929e;font-weight:300;line-height:1.75;margin-bottom:0.5rem;">Modular pipeline in six independent phases running inside Docker containers on a Hetzner Cloud VPS (Ubuntu 24.04). Data sources: <strong style="color:#d4d8de;">football-data.co.uk</strong> (match statistics) and <strong style="color:#d4d8de;">Sofascore API</strong> (referee assignments).</p>
+          <p style="font-size:0.8rem;color:#8a929e;font-weight:300;line-height:1.75;">Statistical models: xYC expected yellow card model (Brier 0.067), xRC expected red card model (Brier 0.113), xF Poisson regression (MAE 3.3). Benjamini–Hochberg FDR correction at 5% applied to all significance tests.</p>
+        </div>
+      </div>
+
+      <!-- 05 Technologies -->
+      <div style="margin-bottom:1.2rem;border:1px solid #2a2e34;border-radius:3px;overflow:hidden;">
+        <div style="background:#141618;border-bottom:1px solid #2a2e34;padding:0.5rem 1rem;display:flex;align-items:center;gap:0.6rem;">
+          <span style="font-family:'DM Mono',monospace;font-size:0.58rem;color:#f5a623;background:rgba(245,166,35,0.1);border-radius:2px;padding:0.1rem 0.35rem;letter-spacing:0.12em;">05</span>
+          <span style="font-size:0.78rem;font-weight:500;color:#fff;text-transform:uppercase;letter-spacing:0.06em;">Technologies Used</span>
+        </div>
+        <div style="padding:1rem 1.2rem;background:#1c1f22;display:flex;flex-wrap:wrap;gap:0.4rem;">
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;background:#141618;border:1px solid rgba(245,166,35,0.35);color:#f5a623;border-radius:3px;padding:0.2rem 0.55rem;">Python 3.11</span>
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;background:#141618;border:1px solid rgba(74,158,255,0.35);color:#4a9eff;border-radius:3px;padding:0.2rem 0.55rem;">PostgreSQL 15</span>
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;background:#141618;border:1px solid rgba(61,184,122,0.35);color:#3db87a;border-radius:3px;padding:0.2rem 0.55rem;">Streamlit</span>
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;background:#141618;border:1px solid rgba(46,196,182,0.35);color:#2ec4b6;border-radius:3px;padding:0.2rem 0.55rem;">Docker · Docker Compose</span>
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;background:#141618;border:1px solid rgba(245,166,35,0.35);color:#f5a623;border-radius:3px;padding:0.2rem 0.55rem;">pandas · numpy · scipy</span>
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;background:#141618;border:1px solid rgba(74,158,255,0.35);color:#4a9eff;border-radius:3px;padding:0.2rem 0.55rem;">scikit-learn · statsmodels</span>
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;background:#141618;border:1px solid rgba(61,184,122,0.35);color:#3db87a;border-radius:3px;padding:0.2rem 0.55rem;">Plotly · reportlab</span>
+          <span style="font-family:'DM Mono',monospace;font-size:0.65rem;background:#141618;border:1px solid rgba(46,196,182,0.35);color:#2ec4b6;border-radius:3px;padding:0.2rem 0.55rem;">Nginx · Certbot · Ubuntu 24.04</span>
+        </div>
+      </div>
+
+      <!-- 06 View Code -->
+      <div style="margin-bottom:1.2rem;border:1px solid #2a2e34;border-radius:3px;overflow:hidden;">
+        <div style="background:#141618;border-bottom:1px solid #2a2e34;padding:0.5rem 1rem;display:flex;align-items:center;gap:0.6rem;">
+          <span style="font-family:'DM Mono',monospace;font-size:0.58rem;color:#f5a623;background:rgba(245,166,35,0.1);border-radius:2px;padding:0.1rem 0.35rem;letter-spacing:0.12em;">06</span>
+          <span style="font-size:0.78rem;font-weight:500;color:#fff;text-transform:uppercase;letter-spacing:0.06em;">View Code</span>
+        </div>
+        <div style="padding:1rem 1.2rem;background:#1c1f22;">
+          <p style="font-size:0.8rem;color:#8a929e;font-weight:300;line-height:1.75;margin-bottom:0.8rem;">The CAL source code is available on GitHub.</p>
+          <a href="https://github.com/ppestana/cal" target="_blank" style="display:inline-flex;align-items:center;gap:0.5rem;background:#141618;border:1px solid #373d46;border-radius:3px;padding:0.5rem 0.9rem;font-family:'DM Mono',monospace;font-size:0.7rem;color:#d4d8de;text-decoration:none;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            github.com/ppestana/cal
+          </a>
+        </div>
+      </div>
+
+    </div>
+    <!-- Footer -->
+    <div style="background:#141618;border-top:1px solid #2a2e34;padding:0.85rem 1.6rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-shrink:0;flex-wrap:wrap;">
+      <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer;">
+        <input type="checkbox" id="calSkipCheck" style="width:13px;height:13px;accent-color:#f5a623;cursor:pointer;">
+        <span style="font-family:'DM Mono',monospace;font-size:0.63rem;color:#8a929e;letter-spacing:0.06em;user-select:none;">Don't show this again</span>
+      </label>
+      <div style="display:flex;align-items:center;gap:0.8rem;">
+        <div style="display:flex;align-items:center;gap:0.4rem;font-family:'DM Mono',monospace;font-size:0.65rem;color:#4e5663;letter-spacing:0.08em;">
+          <svg id="calRingSvg" width="30" height="30" viewBox="0 0 36 36">
+            <circle fill="none" stroke="#373d46" stroke-width="2.5" cx="18" cy="18" r="15.5"/>
+            <circle id="calRingFill" fill="none" stroke="#f5a623" stroke-width="2.5" stroke-linecap="round"
+                    cx="18" cy="18" r="15.5"
+                    stroke-dasharray="97.4" stroke-dashoffset="0"
+                    style="transform:rotate(-90deg);transform-origin:center;transition:stroke-dashoffset 1s linear;"/>
+          </svg>
+          <span id="calCountNum" style="font-size:1rem;font-weight:500;color:#f5a623;min-width:1.2rem;text-align:center;">5</span>
+          <span>sec</span>
+        </div>
+        <button id="calEnterBtn" disabled style="display:inline-flex;align-items:center;gap:0.4rem;background:#f5a623;color:#000;border:none;border-radius:3px;padding:0.5rem 1.1rem;font-size:0.8rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;cursor:pointer;opacity:0.35;">
+          Enter CAL
+          <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ COMING SOON MODAL ═══ -->
+<div id="cs-modal" role="dialog" aria-modal="true" aria-labelledby="cs-title">
+  <div class="cs-backdrop" id="cs-backdrop"></div>
+  <div class="cs-panel">
+    <!-- Photo hero -->
+    <div class="cs-photo">
+      <img class="cs-photo-img" id="cs-img" src="" alt="">
+      <div class="cs-photo-overlay"></div>
+      <div class="cs-badge">
+        <span class="cs-badge-dot"></span>
+        In Development
+      </div>
+      <button class="cs-close" id="cs-close" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <div class="cs-photo-label">
+        <div class="cs-photo-eyebrow" id="cs-eyebrow"></div>
+        <div class="cs-photo-title" id="cs-title"></div>
+      </div>
+    </div>
+    <!-- Body -->
+    <div class="cs-body">
+      <p class="cs-tagline" id="cs-tagline"></p>
+      <p class="cs-message" id="cs-message"></p>
+      <div class="cs-nl-label">Notify me when it launches</div>
+      <div class="cs-nl-row">
+        <input class="cs-nl-input" id="cs-email" type="email" placeholder="your@email.com">
+        <button class="cs-nl-btn" id="cs-nl-btn">Subscribe</button>
+      </div>
+      <div class="cs-nl-ok" id="cs-nl-ok">✓ You're on the list. We'll let you know.</div>
+      <div class="cs-nl-err" id="cs-nl-err">Couldn't subscribe — please email <a href="mailto:news@terradigital.net" style="color:var(--orange)">news@terradigital.net</a> directly.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Custom cursor ──
+  const cur  = document.getElementById('cursor');
+  const ring = document.getElementById('cursor-ring');
+  let mx = window.innerWidth / 2, my = window.innerHeight / 2;
+  let rx = mx, ry = my;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    gsap.to(cur, { x: mx, y: my, duration: 0.08, ease: 'none' });
+  });
+  (function animRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    gsap.set(ring, { x: rx, y: ry });
+    requestAnimationFrame(animRing);
+  })();
+
+  // ── Navbar scroll ──
+  const navbar = document.getElementById('navbar');
+  window.addEventListener('scroll', () => {
+    navbar.classList.toggle('scrolled', window.scrollY > 80);
+  }, { passive: true });
+
+  // ── Carousel ──
+  const slides   = Array.from(document.querySelectorAll('.slide'));
+  const dots     = Array.from(document.querySelectorAll('.dot'));
+  const nCurrent = document.getElementById('nCurrent');
+  const pFill    = document.getElementById('progressFill');
+  const DURATION = 6000;
+  let current = 0;
+  let autoTimer = null;
+  let progTween = null;
+  let isAnimating = false;
+
+  function animateIn(slide) {
+    const label   = slide.querySelector('.slide-label');
+    const title   = slide.querySelector('.slide-title');
+    const tagline = slide.querySelector('.slide-tagline');
+    const btn     = slide.querySelector('.slide-btn');
+    gsap.killTweensOf([label, title, tagline, btn]);
+    gsap.set(label,   { opacity: 0, y: 8 });
+    gsap.set(title,   { opacity: 0, clipPath: 'inset(0 0 100% 0)', y: 20 });
+    gsap.set(tagline, { opacity: 0, y: 12 });
+    gsap.set(btn,     { opacity: 0, x: -10 });
+    const tl = gsap.timeline({ delay: 0.15 });
+    tl.to(label,   { opacity: 1, y: 0,  duration: 0.5,  ease: 'power2.out' })
+      .to(title,   { opacity: 1, clipPath: 'inset(0 0 0% 0)', y: 0, duration: 0.75, ease: 'power3.out' }, '-=0.2')
+      .to(tagline, { opacity: 1, y: 0,  duration: 0.55, ease: 'power2.out' }, '-=0.4')
+      .to(btn,     { opacity: 1, x: 0,  duration: 0.4,  ease: 'power2.out' }, '-=0.3');
+  }
+
+  function goTo(n) {
+    if (isAnimating || n === current) return;
+    isAnimating = true;
+    const prev = slides[current];
+    const next = slides[n];
+    dots[current].classList.remove('active');
+    dots[n].classList.add('active');
+    current = n;
+    nCurrent.textContent = String(current + 1).padStart(2, '0');
+    gsap.set(next, { opacity: 0, visibility: 'visible', zIndex: 2 });
+    gsap.to(next, {
+      opacity: 1, duration: 1.1, ease: 'power2.inOut',
+      onComplete: () => {
+        gsap.set(prev, { opacity: 0, visibility: 'hidden', zIndex: 1 });
+        gsap.set(next, { zIndex: 1 });
+        isAnimating = false;
+      }
+    });
+    const photo = next.querySelector('.slide-photo');
+    gsap.fromTo(photo, { scale: 1.07 }, { scale: 1.0, duration: 8, ease: 'power1.out' });
+    animateIn(next);
+    startProgress();
+  }
+
+  function next() { goTo((current + 1) % slides.length); }
+  function prev() { goTo((current - 1 + slides.length) % slides.length); }
+
+  function startAutoplay() {
+    clearInterval(autoTimer);
+    autoTimer = setInterval(next, DURATION);
+  }
+
+  function startProgress() {
+    if (progTween) progTween.kill();
+    gsap.set(pFill, { width: '0%' });
+    progTween = gsap.to(pFill, { width: '100%', duration: DURATION / 1000, ease: 'none' });
+  }
+
+  document.getElementById('nextBtn').addEventListener('click', e => {
+    e.stopPropagation(); next(); startAutoplay();
+  });
+  document.getElementById('prevBtn').addEventListener('click', e => {
+    e.stopPropagation(); prev(); startAutoplay();
+  });
+  dots.forEach((d, i) => d.addEventListener('click', e => {
+    e.stopPropagation(); goTo(i); startAutoplay();
+  }));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') { next(); startAutoplay(); }
+    if (e.key === 'ArrowLeft')  { prev(); startAutoplay(); }
+  });
+
+  let tx = 0;
+  const car = document.getElementById('carousel');
+  car.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+  car.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - tx;
+    if (Math.abs(dx) > 50) { dx < 0 ? next() : prev(); startAutoplay(); }
+  }, { passive: true });
+
+  animateIn(slides[0]);
+  gsap.fromTo(slides[0].querySelector('.slide-photo'), { scale: 1.07 }, { scale: 1.0, duration: 8, ease: 'power1.out' });
+  startAutoplay();
+  startProgress();
+
+
+
+
+  // ── EconoStats Splash Modal ──
+  const ECO_SKIP_KEY  = 'econostats_splash_skip';
+  const ecoSplash     = document.getElementById('econostats-splash');
+  const ecoClose      = document.getElementById('ecoClose');
+  const ecoEnterBtn   = document.getElementById('ecoEnterBtn');
+  const ecoCountNum   = document.getElementById('ecoCountNum');
+  const ecoRingFill   = document.getElementById('ecoRingFill');
+  const ecoSkipCheck  = document.getElementById('ecoSkipCheck');
+  const ECO_CIRC      = 97.4;
+  const ECO_SECS      = 5;
+  let ecoTimer        = null;
+  let ecoRemaining    = ECO_SECS;
+
+  function openEcoSplash() {
+    if (localStorage.getItem(ECO_SKIP_KEY) === '1') {
+      window.open('https://econostats.terradigital.net', '_blank');
+      return;
+    }
+    ecoRemaining = ECO_SECS;
+    ecoCountNum.textContent = ECO_SECS;
+    ecoCountNum.style.color = '#0f6e4f';
+    ecoRingFill.style.stroke = '#0f6e4f';
+    ecoRingFill.style.strokeDashoffset = '0';
+    ecoEnterBtn.disabled = true;
+    ecoEnterBtn.style.opacity = '0.3';
+    ecoSkipCheck.checked = false;
+    ecoSplash.style.opacity = '1';
+    ecoSplash.style.visibility = 'visible';
+    document.body.style.overflow = 'hidden';
+    clearInterval(ecoTimer);
+    ecoTimer = setInterval(() => {
+      ecoRemaining -= 1;
+      ecoCountNum.textContent = ecoRemaining;
+      ecoRingFill.style.strokeDashoffset = ECO_CIRC * (1 - ecoRemaining / ECO_SECS);
+      if (ecoRemaining <= 0) {
+        clearInterval(ecoTimer);
+        ecoEnterBtn.disabled = false;
+        ecoEnterBtn.style.opacity = '1';
+        ecoCountNum.textContent = '✓';
+        ecoCountNum.style.color = '#3db87a';
+        ecoRingFill.style.stroke = '#3db87a';
+      }
+    }, 1000);
+  }
+
+  function closeEcoSplash() {
+    clearInterval(ecoTimer);
+    ecoSplash.style.opacity = '0';
+    ecoSplash.style.visibility = 'hidden';
+    document.body.style.overflow = '';
+  }
+
+  ecoClose.addEventListener('click', closeEcoSplash);
+  ecoSplash.addEventListener('click', e => { if (e.target === ecoSplash) closeEcoSplash(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && ecoSplash.style.visibility === 'visible') closeEcoSplash();
+  });
+  ecoEnterBtn.addEventListener('click', () => {
+    if (ecoSkipCheck.checked) localStorage.setItem(ECO_SKIP_KEY, '1');
+    closeEcoSplash();
+    window.open('https://econostats.terradigital.net', '_blank');
+  });
+
+  // ── Social Splash Modal ──
+  const SOCIAL_SKIP_KEY  = 'social_splash_skip';
+  const socialSplash     = document.getElementById('social-splash');
+  const socialClose      = document.getElementById('socialClose');
+  const socialEnterBtn   = document.getElementById('socialEnterBtn');
+  const socialCountNum   = document.getElementById('socialCountNum');
+  const socialRingFill   = document.getElementById('socialRingFill');
+  const socialSkipCheck  = document.getElementById('socialSkipCheck');
+  const SOCIAL_CIRC      = 97.4;
+  const SOCIAL_SECS      = 5;
+  let socialTimer        = null;
+  let socialRemaining    = SOCIAL_SECS;
+
+  function openSocialSplash() {
+    if (localStorage.getItem(SOCIAL_SKIP_KEY) === '1') {
+      window.open('https://social.terradigital.net', '_blank');
+      return;
+    }
+    socialRemaining = SOCIAL_SECS;
+    socialCountNum.textContent = SOCIAL_SECS;
+    socialCountNum.style.color = '#2C5F8A';
+    socialRingFill.style.stroke = '#2C5F8A';
+    socialRingFill.style.strokeDashoffset = '0';
+    socialEnterBtn.disabled = true;
+    socialEnterBtn.style.opacity = '0.3';
+    socialSkipCheck.checked = false;
+    socialSplash.style.opacity = '1';
+    socialSplash.style.visibility = 'visible';
+    document.body.style.overflow = 'hidden';
+
+    clearInterval(socialTimer);
+    socialTimer = setInterval(() => {
+      socialRemaining -= 1;
+      socialCountNum.textContent = socialRemaining;
+      socialRingFill.style.strokeDashoffset = SOCIAL_CIRC * (1 - socialRemaining / SOCIAL_SECS);
+      if (socialRemaining <= 0) {
+        clearInterval(socialTimer);
+        socialEnterBtn.disabled = false;
+        socialEnterBtn.style.opacity = '1';
+        socialCountNum.textContent = '✓';
+        socialCountNum.style.color = '#3db87a';
+        socialRingFill.style.stroke = '#3db87a';
+      }
+    }, 1000);
+  }
+
+  function closeSocialSplash() {
+    clearInterval(socialTimer);
+    socialSplash.style.opacity = '0';
+    socialSplash.style.visibility = 'hidden';
+    document.body.style.overflow = '';
+  }
+
+  socialClose.addEventListener('click', closeSocialSplash);
+  socialSplash.addEventListener('click', e => {
+    if (e.target === socialSplash) closeSocialSplash();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && socialSplash.style.visibility === 'visible') closeSocialSplash();
+  });
+
+  socialEnterBtn.addEventListener('click', () => {
+    if (socialSkipCheck.checked) localStorage.setItem(SOCIAL_SKIP_KEY, '1');
+    closeSocialSplash();
+    window.open('https://social.terradigital.net', '_blank');
+  });
+
+  // ── CAL Splash Modal ──
+  const CAL_SKIP_KEY = 'cal_splash_skip';
+  const calSplash    = document.getElementById('cal-splash');
+  const calClose     = document.getElementById('calClose');
+  const calEnterBtn  = document.getElementById('calEnterBtn');
+  const calCountNum  = document.getElementById('calCountNum');
+  const calRingFill  = document.getElementById('calRingFill');
+  const calSkipCheck = document.getElementById('calSkipCheck');
+  const CAL_CIRC     = 97.4;
+  const CAL_SECS     = 5;
+  let calTimer       = null;
+  let calRemaining   = CAL_SECS;
+
+  function openCalSplash() {
+    // If user ticked "don't show again", open directly
+    if (localStorage.getItem(CAL_SKIP_KEY) === '1') {
+      window.open('https://cal.terradigital.net', '_blank');
+      return;
+    }
+    calRemaining = CAL_SECS;
+    calCountNum.textContent = CAL_SECS;
+    calCountNum.style.color = '#f5a623';
+    calRingFill.style.stroke = '#f5a623';
+    calRingFill.style.strokeDashoffset = '0';
+    calEnterBtn.disabled = true;
+    calEnterBtn.style.opacity = '0.35';
+    calSkipCheck.checked = false;
+    calSplash.style.opacity = '1';
+    calSplash.style.visibility = 'visible';
+    document.getElementById('calPanel').style.transform = 'translateY(0) scale(1)';
+    document.body.style.overflow = 'hidden';
+
+    clearInterval(calTimer);
+    calTimer = setInterval(() => {
+      calRemaining -= 1;
+      calCountNum.textContent = calRemaining;
+      calRingFill.style.strokeDashoffset = CAL_CIRC * (1 - calRemaining / CAL_SECS);
+      if (calRemaining <= 0) {
+        clearInterval(calTimer);
+        calEnterBtn.disabled = false;
+        calEnterBtn.style.opacity = '1';
+        calEnterBtn.style.cursor = 'pointer';
+        calCountNum.textContent = '✓';
+        calCountNum.style.color = '#3db87a';
+        calRingFill.style.stroke = '#3db87a';
+      }
+    }, 1000);
+  }
+
+  function closeCalSplash() {
+    clearInterval(calTimer);
+    calSplash.style.opacity = '0';
+    calSplash.style.visibility = 'hidden';
+    document.getElementById('calPanel').style.transform = 'translateY(24px) scale(0.97)';
+    document.body.style.overflow = '';
+  }
+
+  calClose.addEventListener('click', closeCalSplash);
+  calSplash.addEventListener('click', e => {
+    if (e.target === calSplash) closeCalSplash();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && calSplash.classList.contains('open')) closeCalSplash();
+  });
+
+  calEnterBtn.addEventListener('click', () => {
+    if (calSkipCheck.checked) localStorage.setItem(CAL_SKIP_KEY, '1');
+    closeCalSplash();
+    window.open('https://cal.terradigital.net', '_blank');
+  });
+
+  // ── Coming Soon Modal ──
+  const PROJECTS = {
+    saeif: {
+      eyebrow: '02 · Geospatial Alert System',
+      title: 'SAEIF',
+      tagline: 'Forest fire alerts, before the smoke clears',
+      img: 'images/saeif.webp',
+      msg: 'SAEIF integrates real-time IPMA weather data with NASA FIRMS satellite thermal anomalies to map fire risk across Portugal before incidents are reported. Launching at saeif.terradigital.net.'
+    },
+    ecoturismo: {
+      eyebrow: '03 · WebGIS Portal',
+      title: 'Ecoturismo',
+      tagline: "Portugal's trails, mapped and alive",
+      img: 'images/ecoturismo.webp',
+      msg: "An interactive WebGIS portal for Portugal's hiking trails with GPX upload, SRTM elevation profiles, and biodiversity overlays — built on GeoDjango and Leaflet.js. Launching at ecoturismo.terradigital.net."
+    },
+    artop: {
+      eyebrow: '04 · GIS + Historical Investigation',
+      title: 'ARTOP · CS-THB',
+      tagline: 'A 1958 disappearance, reconstructed with GIS',
+      img: 'images/artop.webp',
+      msg: 'A geospatial reconstruction of the CS-THB flying boat disappearance on 9 November 1958, using the official ARTOP accident report, ocean bathymetry data, and PostGIS spatial analysis. Under active research at artop.terradigital.net.'
+    },
+    astrolabio: {
+      eyebrow: '05 · Online Museum',
+      title: 'Astrolábio',
+      tagline: 'The Age of Discovery, reimagined as data',
+      img: 'images/astrolabio.webp',
+      msg: 'An interactive online museum mapping Portuguese maritime exploration routes with portolan chart overlays, voyage timelines, and archival data — planned for astrolabio.terradigital.net in Phase 3.'
+    },
+    store: {
+      eyebrow: '06 · Maps, Gear & Resources',
+      title: 'Store',
+      tagline: 'Maps, gear and geospatial goods',
+      img: 'images/store.webp',
+      msg: 'Printed maps, GIS-themed apparel, and digital resources including QGIS style libraries, Python scripts, and cartographic tutorials — coming soon to store.terradigital.net via Printify and Gumroad.'
+    }
+  };
+
+  const modal     = document.getElementById('cs-modal');
+  const backdrop  = document.getElementById('cs-backdrop');
+  const csClose   = document.getElementById('cs-close');
+  const csImg     = document.getElementById('cs-img');
+  const csEyebrow = document.getElementById('cs-eyebrow');
+  const csTitle   = document.getElementById('cs-title');
+  const csTagline = document.getElementById('cs-tagline');
+  const csMsg     = document.getElementById('cs-message');
+  const csEmail   = document.getElementById('cs-email');
+  const csNlBtn   = document.getElementById('cs-nl-btn');
+  const csNlOk    = document.getElementById('cs-nl-ok');
+  const csNlErr   = document.getElementById('cs-nl-err');
+  let currentProject = null;
+
+  function openModal(key) {
+    const p = PROJECTS[key];
+    if (!p) return;
+    currentProject = key;
+    csImg.src               = p.img;
+    csImg.alt               = p.title;
+    csEyebrow.textContent   = p.eyebrow;
+    csTitle.textContent     = p.title;
+    csTagline.textContent   = p.tagline;
+    csMsg.textContent       = p.msg;
+    csEmail.value           = '';
+    csNlOk.style.display    = 'none';
+    csNlErr.style.display   = 'none';
+    csNlBtn.disabled        = false;
+    csNlBtn.textContent     = 'Subscribe';
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => csEmail.focus(), 500);
+  }
+
+  function closeModal() {
+    modal.classList.remove('open');
+    document.body.style.overflow = '';
+    currentProject = null;
+  }
+
+  csClose.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', closeModal);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+  csNlBtn.addEventListener('click', async () => {
+    const email = csEmail.value.trim();
+    if (!email || !email.includes('@')) { csEmail.focus(); return; }
+    csNlBtn.disabled    = true;
+    csNlBtn.textContent = 'Subscribing\u2026';
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        body: JSON.stringify({ email, project: currentProject }),
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        csNlOk.style.display = 'block';
+        csEmail.value = '';
+      } else { throw new Error(); }
+    } catch {
+      csNlBtn.disabled    = false;
+      csNlBtn.textContent = 'Subscribe';
+      csNlErr.style.display = 'block';
+    }
+  });
+
+  csEmail.addEventListener('keydown', e => { if (e.key === 'Enter') csNlBtn.click(); });
+
+  // ── Single delegated click handler for everything ──
+  document.addEventListener('click', e => {
+
+    // 1. Close button or backdrop — handled by their own listeners above.
+
+    // 2. Carousel prev/next/dots — handled by their own listeners above.
+
+    // 3. Scroll hint
+    if (e.target.closest('.scroll-hint')) {
+      document.getElementById('projects').scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+
+    // 3aa. EconoStats splash trigger
+    const ecoTrigger = e.target.closest('[data-econostats]');
+    if (ecoTrigger) {
+      e.preventDefault();
+      e.stopPropagation();
+      openEcoSplash();
+      return;
+    }
+
+    // 3a. Social splash trigger
+    const socialTrigger = e.target.closest('[data-social]');
+    if (socialTrigger) {
+      e.preventDefault();
+      e.stopPropagation();
+      openSocialSplash();
+      return;
+    }
+
+    // 3b. CAL splash trigger
+    const calTrigger = e.target.closest('[data-cal]');
+    if (calTrigger) {
+      e.preventDefault();
+      e.stopPropagation();
+      openCalSplash();
+      return;
+    }
+
+    // 4. Any element with data-modal → open modal
+    const trigger = e.target.closest('[data-modal]');
+    if (trigger) {
+      e.preventDefault();
+      e.stopPropagation();
+      openModal(trigger.dataset.modal);
+      return;
+    }
+
+    // 5. Slide area click (not on controls) → follow data-href
+    const slide = e.target.closest('.slide');
+    if (slide
+        && !e.target.closest('.carousel-nav')
+        && !e.target.closest('.scroll-hint')) {
+      const href = slide.dataset.href;
+      // Only navigate for live projects (no data-modal on slide itself)
+      // CAL handled by data-cal attribute above
+    }
+  });
+
+  // ── Contact form ──
+  const form    = document.getElementById('contactForm');
+  const success = document.getElementById('formSuccess');
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = form.querySelector('.form-submit');
+    btn.textContent = 'Sending\u2026';
+    btn.disabled = true;
+    try {
+      const res = await fetch('https://formspree.io/f/xwpbkqkv', {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        form.reset();
+        success.style.display = 'block';
+        btn.style.display = 'none';
+      } else {
+        btn.textContent = 'Error \u2014 email info@terradigital.net directly';
+        btn.disabled = false;
+      }
+    } catch {
+      const n  = form.querySelector('#f-name').value;
+      const e2 = form.querySelector('#f-email').value;
+      const s  = form.querySelector('#f-subject').value;
+      const m2 = form.querySelector('#f-msg').value;
+      window.location.href = 'mailto:info@terradigital.net?subject='
+        + encodeURIComponent(s) + '&body='
+        + encodeURIComponent('From: ' + n + ' <' + e2 + '>\n\n' + m2);
+      btn.textContent = 'Send message';
+      btn.disabled = false;
+    }
+  });
+
+})();
+</script>
+
+
+
+
+</body>
+</html>
