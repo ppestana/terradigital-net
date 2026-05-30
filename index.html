@@ -2866,8 +2866,11 @@ footer {
         && !e.target.closest('.carousel-nav')
         && !e.target.closest('.scroll-hint')) {
       const href = slide.dataset.href;
-      // Only navigate for live projects (no data-modal on slide itself)
-      // CAL handled by data-cal attribute above
+      // Navigate for live projects (data-href set, no data-modal on slide)
+      if (href && href !== '#' && !slide.dataset.modal) {
+        window.open(href, '_blank');
+        return;
+      }
     }
   });
 
