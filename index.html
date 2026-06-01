@@ -2894,7 +2894,10 @@ footer {
         success.style.display = 'block';
         btn.style.display = 'none';
       } else {
-        btn.textContent = 'Error \u2014 email info@terradigital.net directly';
+        let detail = '';
+        try { const d = await res.json(); detail = (d.errors && d.errors.map(x => x.message).join('; ')) || d.error || ''; } catch (_) {}
+        console.error('Formspree', res.status, detail);
+        btn.textContent = 'Error (' + res.status + ') \u2014 email info@terradigital.net directly';
         btn.disabled = false;
       }
     } catch {
