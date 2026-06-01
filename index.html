@@ -2632,6 +2632,56 @@ footer {
 
 
   // ── EconoStats Splash Modal ──
+
+  // ── SAEIF Splash Modal ──
+  const SAEIF_SECS    = 5;
+  const SAEIF_CIRC    = 75.4;
+  const saeifSplash   = document.getElementById('saeif-splash');
+  const saeifCountNum = document.getElementById('saeifCountdown');
+  const saeifRingFill = document.getElementById('saeifRing');
+  const saeifEnterBtn = document.getElementById('saeifEnterBtn');
+  let saeifRemaining  = SAEIF_SECS;
+  let saeifTimer;
+
+  function openSaeifSplash() {
+    saeifRemaining = SAEIF_SECS;
+    saeifCountNum.textContent = SAEIF_SECS;
+    saeifCountNum.style.color = '#c8321e';
+    saeifRingFill.style.stroke = '#c8321e';
+    saeifRingFill.style.strokeDashoffset = '0';
+    saeifEnterBtn.disabled = true;
+    saeifEnterBtn.style.opacity = '0.3';
+    saeifSplash.style.opacity = '1';
+    saeifSplash.style.visibility = 'visible';
+    document.body.style.overflow = 'hidden';
+    clearInterval(saeifTimer);
+    saeifTimer = setInterval(() => {
+      saeifRemaining -= 1;
+      saeifCountNum.textContent = saeifRemaining;
+      saeifRingFill.style.strokeDashoffset = SAEIF_CIRC * (1 - saeifRemaining / SAEIF_SECS);
+      if (saeifRemaining <= 0) {
+        clearInterval(saeifTimer);
+        saeifEnterBtn.disabled = false;
+        saeifEnterBtn.style.opacity = '1';
+        saeifCountNum.textContent = '✓';
+        saeifCountNum.style.color = '#f85149';
+        saeifRingFill.style.stroke = '#f85149';
+      }
+    }, 1000);
+  }
+
+  function closeSaeifSplash() {
+    clearInterval(saeifTimer);
+    saeifSplash.style.opacity = '0';
+    saeifSplash.style.visibility = 'hidden';
+    document.body.style.overflow = '';
+  }
+
+  saeifSplash.addEventListener('click', e => { if (e.target === saeifSplash) closeSaeifSplash(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && saeifSplash.style.visibility === 'visible') closeSaeifSplash();
+  });
+
   const ECO_SKIP_KEY  = 'econostats_splash_skip';
   const ecoSplash     = document.getElementById('econostats-splash');
   const ecoClose      = document.getElementById('ecoClose');
